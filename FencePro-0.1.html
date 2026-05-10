@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Security Fence Company – Residential Estimator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a1a2e;color:#eee;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none;}
+#toolbar{background:#16213e;padding:6px 10px;display:flex;align-items:center;gap:6px;border-bottom:2px solid #0f3460;flex-wrap:wrap;min-height:46px;}
+.tg{display:flex;gap:4px;align-items:center;padding-right:8px;border-right:1px solid #0f3460;}
+.tg:last-child{border-right:none;margin-left:auto;}
+.tb{background:#0f3460;border:1px solid #1a4a7a;color:#eee;padding:5px 9px;border-radius:5px;cursor:pointer;font-size:12px;transition:background .15s;white-space:nowrap;}
+.tb:hover{background:#1a4a7a;}
+.tb.active{background:#e94560;border-color:#c73652;}
+.tb.green{background:#1a6b3a;border-color:#27ae60;}
+.tb.green:hover{background:#27ae60;}
+#main{display:flex;flex:1;overflow:hidden;}
+#sidebar{width:220px;background:#16213e;border-right:1px solid #0f3460;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.ph{padding:7px 10px;background:#0f3460;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;display:flex;justify-content:space-between;}
+.pc{padding:8px;}
+.og{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;}
+.ob{background:#0f3460;border:1px solid #1a4a7a;color:#eee;padding:7px 3px;border-radius:5px;cursor:pointer;font-size:11px;text-align:center;}
+.ob:hover{background:#1a4a7a;}
+.ob.active{background:#e94560;border-color:#c73652;}
+.cr{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
+.cd{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+.cd.active{border-color:#fff;transform:scale(1.15);}
+label{font-size:11px;color:#aaa;display:block;margin-bottom:2px;}
+input[type=text],input[type=number],select,textarea{width:100%;background:#0a2040;border:1px solid #1a4a7a;color:#eee;padding:4px 7px;border-radius:4px;font-size:12px;margin-bottom:5px;}
+textarea{resize:vertical;min-height:44px;font-size:11px;}
+.gsb{flex:1;background:#0f3460;border:1px solid #1a4a7a;color:#eee;padding:4px 2px;border-radius:4px;cursor:pointer;font-size:11px;text-align:center;}
+.gsb.active{background:#e94560;border-color:#c73652;}
+.fl-item{padding:5px 7px;margin:2px 0;background:#0a2040;border-radius:4px;cursor:pointer;border:2px solid transparent;display:flex;align-items:center;gap:5px;font-size:11px;}
+.fl-item.sel{border-color:#e94560;}
+.fci{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+#canvas-container{flex:1;position:relative;overflow:hidden;background:#ececec;touch-action:none;}
+canvas{display:block;cursor:crosshair;}
+#rp{width:200px;background:#16213e;border-left:1px solid #0f3460;overflow-y:auto;flex-shrink:0;}
+.mr{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #0a2040;font-size:11px;}
+.mc{font-weight:700;color:#e94560;}
+.st{font-size:10px;font-weight:700;color:#e94560;text-transform:uppercase;letter-spacing:.5px;padding:5px 0 2px;}
+#statusbar{background:#0f3460;padding:3px 10px;font-size:11px;color:#888;display:flex;gap:14px;}
+#ctx-menu{position:fixed;background:#16213e;border:1px solid #0f3460;border-radius:6px;padding:4px 0;z-index:9999;min-width:140px;display:none;}
+.ci{padding:5px 12px;cursor:pointer;font-size:12px;}
+.ci:hover{background:#0f3460;}
+.cs{border-top:1px solid #0f3460;margin:2px 0;}
+.tip{font-size:10px;color:#666;padding:3px 0;}
+@media(max-width:700px){#sidebar{width:170px;}#rp{width:140px;}}
+@media(max-width:480px){#sidebar{display:none;}#rp{width:110px;}}
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <div class="tg">
+    <span style="font-weight:800;color:#e94560;font-size:13px;letter-spacing:-0.3px;">🔒 Security Fence Co.</span><span style="font-size:10px;color:#888;margin-left:4px;">Residential Estimator</span>
+  </div>
+  <div class="tg">
+    <button class="tb active" id="btn-select" onclick="setTool('select')" title="Select (V)">▶ Select</button>
+    <button class="tb" id="btn-pan" onclick="setTool('pan')" title="Pan (H)">✋ Pan</button>
+    <button class="tb" id="btn-fence" onclick="setTool('fence')" title="Draw Fence (F)">📐 Fence</button>
+    <button class="tb" id="btn-object" onclick="setTool('object')" title="Place Object (O)">🏠 Object</button>
+    <button class="tb" id="btn-gate" onclick="setTool('gate')" title="Place Gate on fence (G)">🚪 Gate</button>
+    <button class="tb" id="btn-note" onclick="setTool('note')" title="Add Note (N)">📝 Note</button>
+  </div>
+  <div class="tg">
+    <label style="margin:0;color:#888;font-size:11px;">Background:</label>
+    <button class="tb" onclick="document.getElementById('imgUpload').click()" title="Upload image to trace over">🖼 Upload</button>
+    <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="loadBgImage(event)">
+    <button class="tb" id="btn-calibrate" onclick="setTool('calibrate')" title="Calibrate scale from image (draw a line over a known distance)">📏 Calibrate</button>
+    <input type="range" id="bgOpacity" min="0" max="100" value="40" style="width:60px;vertical-align:middle;" title="Background image opacity" oninput="setBgOpacity(this.value)">
+    <button class="tb" onclick="removeBgImage()" title="Remove background image" style="font-size:10px;">✕ Img</button>
+  </div>
+  <div class="tg">
+    <button class="tb" onclick="undo()" title="Undo Ctrl+Z">↩</button>
+    <button class="tb" onclick="redo()" title="Redo Ctrl+Y">↪</button>
+    <button class="tb" onclick="deleteSelected()" title="Delete">🗑</button>
+  </div>
+  <div class="tg">
+    <button class="tb" onclick="doZoom(cw()/2,ch()/2,1.25)">+</button>
+    <button class="tb" onclick="doZoom(cw()/2,ch()/2,0.8)">−</button>
+    <button class="tb" onclick="fitAll()">Fit</button>
+    <span id="zlbl" style="font-size:11px;color:#888;">100%</span>
+  </div>
+  <div class="tg">
+    <label style="margin:0;color:#888;">Scale:</label>
+    <select id="scalesel" onchange="pxFt=parseFloat(this.value);render();" style="width:90px;margin:0;">
+      <option value="5">5 px/ft</option>
+      <option value="10" selected>10 px/ft</option>
+      <option value="20">20 px/ft</option>
+      <option value="40">40 px/ft</option>
+    </select>
+    <label style="margin:0;color:#888;">Snap:</label>
+    <input type="number" id="snapft" value="1" min="0.1" step="0.5" style="width:46px;margin:0;" title="Snap grid (feet)">
+  </div>
+  <div class="tg">
+    <button class="tb green" onclick="exportJPEG()">📷 JPEG</button>
+    <button class="tb green" onclick="exportPDF()">📄 PDF</button>
+  </div>
+</div>
+
+<div id="main">
+  <!-- LEFT SIDEBAR -->
+  <div id="sidebar">
+    <div>
+      <div class="ph" onclick="tog('p-obj')">Objects <span id="arr-obj">▼</span></div>
+      <div class="pc" id="p-obj">
+        <div class="og">
+          <button class="ob active" id="ob-house" onclick="setObjType('house')">🏠 House</button>
+          <button class="ob" id="ob-building" onclick="setObjType('building')">🏢 Building</button>
+          <button class="ob" id="ob-pool" onclick="setObjType('pool')">🏊 Pool</button>
+          <button class="ob" id="ob-tree" onclick="setObjType('tree')">🌳 Tree</button>
+          <button class="ob" id="ob-bush" onclick="setObjType('bush')">🌿 Bush</button>
+          <button class="ob" id="ob-shed" onclick="setObjType('shed')">🏚 Shed</button>
+        </div>
+        <div class="tip">Select type then click canvas to place. Drag corners to resize.</div>
+      </div>
+    </div>
+    <div>
+      <div class="ph" onclick="tog('p-fence')">Fence Properties <span>▼</span></div>
+      <div class="pc" id="p-fence">
+        <label>Fence Name</label>
+        <input type="text" id="fn" placeholder="e.g. Back Yard" oninput="updateSelFence()">
+        <label>Color</label>
+        <div class="cr" id="fcolors">
+          <div class="cd active" style="background:#e74c3c" data-c="#e74c3c" onclick="pickColor('#e74c3c')"></div>
+          <div class="cd" style="background:#3498db" data-c="#3498db" onclick="pickColor('#3498db')"></div>
+          <div class="cd" style="background:#2ecc71" data-c="#2ecc71" onclick="pickColor('#2ecc71')"></div>
+          <div class="cd" style="background:#f39c12" data-c="#f39c12" onclick="pickColor('#f39c12')"></div>
+          <div class="cd" style="background:#9b59b6" data-c="#9b59b6" onclick="pickColor('#9b59b6')"></div>
+          <div class="cd" style="background:#1abc9c" data-c="#1abc9c" onclick="pickColor('#1abc9c')"></div>
+          <div class="cd" style="background:#e67e22" data-c="#e67e22" onclick="pickColor('#e67e22')"></div>
+          <div class="cd" style="background:#34495e" data-c="#34495e" onclick="pickColor('#34495e')"></div>
+        </div>
+        <label>Notes</label>
+        <textarea id="fnotes" placeholder="Notes about this fence run..." oninput="updateSelFence()"></textarea>
+        <div class="tip">Double-click to finish fence. Click existing point to connect.</div>
+      </div>
+    </div>
+    <div>
+      <div class="ph" onclick="tog('p-gate')">Gate Settings <span>▼</span></div>
+      <div class="pc" id="p-gate">
+        <label>Gate Type</label>
+        <select id="gtype" onchange="onGTypeChange()">
+          <option value="single">Single Swing</option>
+          <option value="double">Double Swing</option>
+          <option value="slide">Sliding</option>
+        </select>
+        <label>Gate Width</label>
+        <div style="display:flex;gap:4px;margin-bottom:5px;" id="gsb-row">
+          <button class="gsb active" id="gsb-a" onclick="setGSz(gSzOpts[0])">4ft</button>
+          <button class="gsb" id="gsb-b" onclick="setGSz(gSzOpts[1])">5ft</button>
+          <button class="gsb" id="gsb-c" onclick="setGSzCustom()">?ft</button>
+        </div>
+        <input type="number" id="gcustom" placeholder="Custom width (ft)" style="display:none;">
+        <div id="gate-sel-panel" style="display:none;margin-top:4px;">
+          <label>Selected Gate</label>
+          <button class="tb" style="width:100%;margin-bottom:4px;" onclick="flipSelectedGate()">↕ Flip In / Out</button>
+          <button class="tb" style="width:100%;background:#1a5c3a;border-color:#27ae60;" onclick="swapHinge()">↔ Swap Hinge Side</button>
+          <div class="tip">Double-click gate to flip in/out.</div>
+        </div>
+        <div class="tip">Select Gate tool then click on a fence line.</div>
+      </div>
+    </div>
+    <div>
+      <div class="ph" onclick="tog('p-lines')">Fence Lines <span>▼</span></div>
+      <div class="pc" id="p-lines">
+        <div id="flist"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div id="canvas-container">
+    <canvas id="mc"></canvas>
+    <!-- Note editor bubble overlay -->
+    <div id="note-editor" style="display:none;position:absolute;z-index:100;">
+      <div style="position:relative;">
+        <textarea id="note-ta" rows="3" style="width:180px;padding:8px 10px;border-radius:10px;border:2px solid #f39c12;background:#fff9c4;color:#333;font-size:13px;font-family:inherit;resize:both;box-shadow:0 2px 8px rgba(0,0,0,0.25);outline:none;" placeholder="Type note here..."></textarea>
+        <div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end;">
+          <button onclick="commitNote()" style="background:#27ae60;color:white;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px;">✓ Done</button>
+          <button onclick="cancelNote()" style="background:#e74c3c;color:white;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">✕</button>
+        </div>
+      </div>
+    </div>
+    <!-- Calibration instruction banner -->
+    <div id="cal-overlay" style="display:none;position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:white;padding:6px 14px;border-radius:6px;font-size:12px;pointer-events:none;z-index:99;white-space:nowrap;">
+      📏 Click two points on the image that represent a known distance
+    </div>
+    <!-- Calibration distance input dialog -->
+    <div id="cal-dialog" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#16213e;border:2px solid #e94560;border-radius:10px;padding:18px 20px;z-index:200;min-width:260px;box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+      <div style="font-size:13px;font-weight:700;color:#eee;margin-bottom:6px;">📏 Calibrate Scale</div>
+      <div id="cal-measured" style="font-size:11px;color:#aaa;margin-bottom:10px;"></div>
+      <label style="font-size:12px;color:#ccc;">Real-world distance (feet):</label>
+      <input id="cal-input" type="number" min="0.1" step="0.1" placeholder="e.g. 75" style="width:100%;margin:6px 0 12px;font-size:15px;padding:6px 8px;background:#0a2040;border:1px solid #1a4a7a;color:#eee;border-radius:5px;">
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="cancelCalibrate()" style="background:#333;color:#eee;border:none;border-radius:5px;padding:6px 14px;cursor:pointer;font-size:12px;">Cancel</button>
+        <button onclick="applyCalibrate()" style="background:#e94560;color:white;border:none;border-radius:5px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:700;">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="rp">
+    <div class="ph">📋 Materials</div>
+    <div class="pc" id="mat-body"></div>
+  </div>
+</div>
+
+<div id="statusbar">
+  <span id="s-tool">Select</span>
+  <span id="s-pos">0ft, 0ft</span>
+  <span id="s-msg">Click to select. Drag to move.</span>
+</div>
+
+<div id="ctx-menu">
+  <div class="ci" onclick="ctxDel()">🗑 Delete</div>
+  <div class="ci" onclick="ctxDup()">📋 Duplicate</div>
+  <div class="cs"></div>
+  <div class="ci" id="ctx-gate-item" onclick="ctxGate()">🚪 Add Gate Here</div>
+  <div class="cs"></div>
+  <div class="ci" onclick="ctxFront()">⬆ Bring Front</div>
+  <div class="ci" onclick="ctxBack()">⬇ Send Back</div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────
+const S = {
+  fences:[],   // {id,name,color,notes,pts:[{x,y}],gates:[{si,t,sz,gt,flip}]}
+  objs:[],     // {id,type,x,y,w,h,lbl,color}
+  notes:[],    // {id,x,y,txt}
+  selId:null, selType:null, selGateIdx:null,
+  nid:1
+};
+let hist=[], hIdx=-1;
+
+// ─── VIEW ─────────────────────────────────────────────────────
+let vx=0,vy=0,zoom=1,pxFt=10;
+
+// ─── TOOL STATE ───────────────────────────────────────────────
+let tool='select', objType='house', fColor='#e74c3c', gSz=4, gSzC='custom';
+let gSzOpts=[4,5]; // changes based on gate type
+
+// Background image
+let bgImg=null; // {img, x, y, w, h, opacity}
+let bgOpacity=0.4;
+let bgDragging=false, bgDragOff={x:0,y:0};
+
+// Calibration
+let calPt1=null, calPt2=null;
+
+// Note editor state
+let editingNoteId=null;
+let drawing=false, dPts=[], dId=null;
+let dragging=false, dragT=null, dragStart={x:0,y:0};
+let panning=false, panStart={x:0,y:0}, panV={x:0,y:0};
+let resizing=false, resT=null;
+let lastMouse={x:0,y:0};
+let touchT0=0, touchMoved=false;
+
+const canvas=document.getElementById('mc');
+const ctx=canvas.getContext('2d');
+const cont=document.getElementById('canvas-container');
+
+// ─── INIT ─────────────────────────────────────────────────────
+window.onload=()=>{
+  resize();
+  window.addEventListener('resize',resize);
+  vx=canvas.width/2; vy=canvas.height/2;
+  setupEvents();
+  setTool('select');
+  saveHist();
+  render();
+};
+function resize(){canvas.width=cont.clientWidth;canvas.height=cont.clientHeight;render();}
+function cw(){return canvas.width;} function ch(){return canvas.height;}
+
+// ─── COORDS ───────────────────────────────────────────────────
+function c2w(cx,cy){return{x:(cx-vx)/zoom/pxFt,y:(cy-vy)/zoom/pxFt};}
+function w2c(wx,wy){return{x:wx*pxFt*zoom+vx,y:wy*pxFt*zoom+vy};}
+function cpos(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+function snap(w){
+  const g=parseFloat(document.getElementById('snapft').value)||1;
+  return{x:Math.round(w.x/g)*g, y:Math.round(w.y/g)*g};
+}
+function snapAll(w,exFId,exPIdx){
+  const g=parseFloat(document.getElementById('snapft').value)||1;
+  let best=null,bd=g*0.6;
+  for(const f of S.fences){
+    for(let i=0;i<f.pts.length;i++){
+      if(f.id===exFId&&i===exPIdx)continue;
+      const d=dst(w,f.pts[i]);
+      if(d<bd){bd=d;best=f.pts[i];}
+    }
+  }
+  for(const o of S.objs){
+    const corners=[{x:o.x,y:o.y},{x:o.x+o.w,y:o.y},{x:o.x,y:o.y+o.h},{x:o.x+o.w,y:o.y+o.h}];
+    for(const c of corners){const d=dst(w,c);if(d<bd){bd=d;best=c;}}
+  }
+  return best||snap(w);
+}
+function dst(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
+function d2seg(p,a,b){
+  const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;
+  if(!l2)return dst(p,a);
+  const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l2));
+  return dst(p,{x:a.x+t*dx,y:a.y+t*dy});
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────
+function setupEvents(){
+  canvas.addEventListener('mousedown',pDown);
+  canvas.addEventListener('mousemove',pMove);
+  canvas.addEventListener('mouseup',pUp);
+  canvas.addEventListener('dblclick',pDbl);
+  canvas.addEventListener('contextmenu',pCtx);
+  canvas.addEventListener('wheel',pWheel,{passive:false});
+  canvas.addEventListener('touchstart',tStart,{passive:false});
+  canvas.addEventListener('touchmove',tMove,{passive:false});
+  canvas.addEventListener('touchend',tEnd,{passive:false});
+  window.addEventListener('keydown',kDown);
+  document.addEventListener('click',()=>{document.getElementById('ctx-menu').style.display='none';});
+}
+
+let pinchDist=0;
+function tStart(e){
+  e.preventDefault();
+  touchMoved=false; touchT0=Date.now();
+  if(e.touches.length===2){pinchDist=tDist(e.touches);panning=false;dragging=false;return;}
+  const t=e.touches[0];
+  pDown({clientX:t.clientX,clientY:t.clientY,button:0});
+}
+function tMove(e){
+  e.preventDefault(); touchMoved=true;
+  if(e.touches.length===2){
+    const d=tDist(e.touches);
+    const f=d/pinchDist;
+    const cx=(e.touches[0].clientX+e.touches[1].clientX)/2-canvas.getBoundingClientRect().left;
+    const cy=(e.touches[0].clientY+e.touches[1].clientY)/2-canvas.getBoundingClientRect().top;
+    doZoom(cx,cy,f); pinchDist=d; return;
+  }
+  const t=e.touches[0];
+  pMove({clientX:t.clientX,clientY:t.clientY});
+}
+function tEnd(e){
+  e.preventDefault();
+  if(e.changedTouches.length){
+    const t=e.changedTouches[0];
+    if(!touchMoved&&Date.now()-touchT0>500){
+      pCtx({clientX:t.clientX,clientY:t.clientY,preventDefault:()=>{}});
+      return;
+    }
+    pUp({clientX:t.clientX,clientY:t.clientY});
+  }
+}
+function tDist(ts){const dx=ts[0].clientX-ts[1].clientX,dy=ts[0].clientY-ts[1].clientY;return Math.sqrt(dx*dx+dy*dy);}
+
+function pDown(e){
+  const cp=cpos(e), w=c2w(cp.x,cp.y);
+  dragging=false; dragStart=cp;
+  if(e.button===1||tool==='pan'){
+    panning=true; panStart=cp; panV={x:vx,y:vy};
+    canvas.style.cursor='grabbing'; return;
+  }
+  if(tool==='select') selDown(cp,w);
+  else if(tool==='fence') fenceDown(w);
+  else if(tool==='object') placeObj(w);
+  else if(tool==='gate') gateDown(w);
+  else if(tool==='note') noteDown(w);
+  else if(tool==='calibrate') calibrateDown(w);
+  render();
+}
+function pMove(e){
+  const cp=cpos(e), w=c2w(cp.x,cp.y);
+  lastMouse=cp;
+  document.getElementById('s-pos').textContent=w.x.toFixed(1)+'ft, '+w.y.toFixed(1)+'ft';
+  if(panning){vx=panV.x+(cp.x-panStart.x);vy=panV.y+(cp.y-panStart.y);render();return;}
+  const moved=Math.abs(cp.x-dragStart.x)>3||Math.abs(cp.y-dragStart.y)>3;
+  if(dragT&&moved){dragging=true;handleDrag(w);render();return;}
+  if(resT&&moved){resizing=true;doResize(w);render();return;}
+  if(tool==='fence'&&drawing){render();return;}
+  if(tool==='select'){const h=hitTest(w);canvas.style.cursor=h?'move':'default';}
+}
+function pUp(e){
+  if(panning){panning=false;canvas.style.cursor=tool==='pan'?'grab':'crosshair';}
+  if(dragging&&dragT)saveHist();
+  if(resizing&&resT)saveHist();
+  dragging=false; dragT=null; resT=null; resizing=false;
+  render();
+}
+function pDbl(e){
+  const cp=cpos(e), w=c2w(cp.x,cp.y);
+  if(tool==='fence'&&drawing){finishFence();return;}
+  if(tool==='select'){
+    const h=hitTest(w);
+    if(h&&h.type==='gate'){flipGate(h.id,h.gi);return;}
+    if(h&&(h.type==='object'||h.type==='note'))editLabel(h);
+  }
+}
+function pCtx(e){
+  e.preventDefault();
+  const cp=cpos(e), w=c2w(cp.x,cp.y);
+  const h=hitTest(w);
+  if(h){
+    selItem(h);
+    const m=document.getElementById('ctx-menu');
+    m.style.display='block';
+    m.style.left=e.clientX+'px'; m.style.top=e.clientY+'px';
+    document.getElementById('ctx-gate-item').style.display=h.type==='fence'?'':'none';
+  }
+  render();
+}
+function pWheel(e){e.preventDefault();const cp=cpos(e);doZoom(cp.x,cp.y,e.deltaY<0?1.12:0.88);}
+function kDown(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();redo();}
+  if(e.key==='Delete'||e.key==='Backspace')deleteSelected();
+  if(e.key==='v'||e.key==='V')setTool('select');
+  if(e.key==='h'||e.key==='H')setTool('pan');
+  if(e.key==='f'||e.key==='F')setTool('fence');
+  if(e.key==='o'||e.key==='O')setTool('object');
+  if(e.key==='g'||e.key==='G')setTool('gate');
+  if(e.key==='n'||e.key==='N')setTool('note');
+  if(e.key==='Escape'){
+    if(drawing&&dPts.length>1)finishFence();
+    else cancelFence();
+    S.selId=null;S.selType=null;render();
+  }
+}
+
+// ─── TOOL HANDLERS ────────────────────────────────────────────
+function selDown(cp,w){
+  // Resize handle check
+  if(S.selId&&S.selType==='object'){
+    const o=S.objs.find(x=>x.id===S.selId);
+    if(o){const h=getResizeHandle(o,w);if(h){resT={o,h,sw:w,so:{...o}};return;}}
+  }
+  const h=hitTest(w);
+  if(h){
+    selItem(h);
+    if(h.type==='object'){
+      const o=S.objs.find(x=>x.id===h.id);
+      dragT={type:'object',id:h.id,ox:w.x-o.x,oy:w.y-o.y};
+    } else if(h.type==='fence-pt'){
+      dragT={type:'fence-pt',id:h.id,pi:h.pi};
+    } else if(h.type==='fence'){
+      const f=S.fences.find(x=>x.id===h.id);
+      dragT={type:'fence',id:h.id,sp:f.pts.map(p=>({...p})),sw:w};
+    } else if(h.type==='gate'){
+      S.selId=h.id; S.selType='gate'; S.selGateIdx=h.gi;
+      dragT={type:'gate',fenceId:h.id,gateIdx:h.gi};
+    } else if(h.type==='note'){
+      const n=S.notes.find(x=>x.id===h.id);
+      dragT={type:'note',id:h.id,ox:w.x-n.x,oy:w.y-n.y};
+    } else if(h.type==='bg'){
+      dragT={type:'bg',ox:w.x-bgImg.x,oy:w.y-bgImg.y};
+    }
+  } else {S.selId=null;S.selType=null;S.selGateIdx=null;}
+  updateSidebar();
+}
+function fenceDown(w){
+  const sn=snapAll(w,null,null);
+  const snapDist=(parseFloat(document.getElementById('snapft').value)||1)*0.6;
+  if(!drawing){
+    drawing=true; dPts=[sn]; dId='tmp-'+S.nid;
+  } else {
+    // Check snap to existing point = finish/connect
+    for(const f of S.fences){
+      for(const p of f.pts){
+        if(dst(sn,p)<snapDist){dPts.push(sn);finishFence();return;}
+      }
+    }
+    // Close loop on click near first point (need at least 3 pts to close)
+    if(dPts.length>2&&dst(sn,dPts[0])<snapDist){finishFence();return;}
+    dPts.push(sn);
+  }
+}
+function finishFence(){
+  if(!drawing||dPts.length<2){cancelFence();return;}
+  saveHist();
+  const id=S.nid++;
+  // Use the existing group name for this color, or whatever is in the name field
+  const existingName=groupName(fColor);
+  const name=existingName||document.getElementById('fn').value||'Fence '+colorGroups().length+1;
+  document.getElementById('fn').value=name;
+  S.fences.push({
+    id,
+    name,
+    color:fColor,
+    notes:document.getElementById('fnotes').value,
+    pts:[...dPts],
+    gates:[]
+  });
+  S.selId=id; S.selType='fence';
+  drawing=false; dPts=[]; dId=null;
+  updateSidebar(); calcMaterials(); renderFList(); setTool('select'); render();
+}
+function cancelFence(){drawing=false;dPts=[];dId=null;render();}
+
+function gateDown(w){
+  const r=nearestSegment(w);
+  if(r&&r.d<1.5){
+    saveHist();
+    const f=S.fences.find(x=>x.id===r.fid);
+    const sz=gSz==='custom'?(parseFloat(document.getElementById('gcustom').value)||4):gSz;
+    f.gates.push({si:r.si,t:r.t,sz,gt:document.getElementById('gtype').value,flip:false,hinge:'left'});
+    calcMaterials(); setTool('select'); render();
+  } else {
+    setMsg('Click closer to a fence line to place gate.');
+  }
+}
+
+function placeObj(w){
+  saveHist();
+  const sn=snap(w);
+  const sizes={house:{w:40,h:30},building:{w:30,h:25},pool:{w:25,h:14},tree:{w:8,h:8},bush:{w:6,h:6},shed:{w:14,h:10}};
+  const sz=sizes[objType]||{w:20,h:15};
+  const colors={house:'#f0dfc0',building:'#c8d8e8',pool:'#90c8f0',tree:'#4ab840',bush:'#3a9830',shed:'#c8a060'};
+  const id=S.nid++;
+  S.objs.push({id,type:objType,x:sn.x-sz.w/2,y:sn.y-sz.h/2,w:sz.w,h:sz.h,
+    lbl:objType.charAt(0).toUpperCase()+objType.slice(1),color:colors[objType]||'#e0e0e0'});
+  S.selId=id; S.selType='object';
+  updateSidebar(); setTool('select'); render();
+}
+
+function noteDown(w){
+  saveHist();
+  const sn=snap(w);
+  const id=S.nid++;
+  S.notes.push({id,x:sn.x,y:sn.y,txt:'',_tw:40,_th:20});
+  S.selId=id; S.selType='note';
+  render();
+  openNoteEditor(id);
+  setTool('select');
+}
+
+function handleDrag(w){
+  if(!dragT)return;
+  const g=parseFloat(document.getElementById('snapft').value)||1;
+  if(dragT.type==='object'){
+    const o=S.objs.find(x=>x.id===dragT.id);
+    if(o){const sn=snap({x:w.x-dragT.ox,y:w.y-dragT.oy});o.x=sn.x;o.y=sn.y;}
+  } else if(dragT.type==='fence-pt'){
+    const f=S.fences.find(x=>x.id===dragT.id);
+    if(f&&dragT.pi<f.pts.length){f.pts[dragT.pi]=snapAll(w,f.id,dragT.pi);calcMaterials();}
+  } else if(dragT.type==='fence'){
+    const f=S.fences.find(x=>x.id===dragT.id);
+    if(f){
+      const dx=w.x-dragT.sw.x, dy=w.y-dragT.sw.y;
+      f.pts=dragT.sp.map(p=>snap({x:p.x+dx,y:p.y+dy}));
+      calcMaterials();
+    }
+  } else if(dragT.type==='note'){
+    const n=S.notes.find(x=>x.id===dragT.id);
+    if(n){const sn=snap({x:w.x-dragT.ox,y:w.y-dragT.oy});n.x=sn.x;n.y=sn.y;}
+  } else if(dragT.type==='gate'){
+    const f=S.fences.find(x=>x.id===dragT.fenceId);
+    if(!f)return;
+    let best=null,bd=Infinity;
+    for(let i=0;i<f.pts.length-1;i++){
+      const a=f.pts[i],b=f.pts[i+1];
+      const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;
+      if(!l2)continue;
+      let t=((w.x-a.x)*dx+(w.y-a.y)*dy)/l2;
+      t=Math.max(0.05,Math.min(0.95,t));
+      const np={x:a.x+t*dx,y:a.y+t*dy};
+      const d=dst(w,np);
+      if(d<bd){bd=d;best={si:i,t};}
+    }
+    if(best){const g=f.gates[dragT.gateIdx];g.si=best.si;g.t=best.t;calcMaterials();}
+  } else if(dragT.type==='bg'&&bgImg){
+    bgImg.x=w.x-dragT.ox; bgImg.y=w.y-dragT.oy;
+  }
+}
+
+function getResizeHandle(o,w){
+  const hs={br:{x:o.x+o.w,y:o.y+o.h},bl:{x:o.x,y:o.y+o.h},
+    tr:{x:o.x+o.w,y:o.y},tl:{x:o.x,y:o.y},r:{x:o.x+o.w,y:o.y+o.h/2},b:{x:o.x+o.w/2,y:o.y+o.h}};
+  const thresh=0.8/zoom;
+  for(const[k,p]of Object.entries(hs))if(dst(w,p)<thresh)return k;
+  return null;
+}
+function doResize(w){
+  if(!resT)return;
+  const{o,h,sw,so}=resT;
+  const dx=w.x-sw.x, dy=w.y-sw.y;
+  if(h==='br'){o.w=Math.max(2,so.w+dx);o.h=Math.max(2,so.h+dy);}
+  else if(h==='bl'){o.x=so.x+dx;o.w=Math.max(2,so.w-dx);o.h=Math.max(2,so.h+dy);}
+  else if(h==='tr'){o.w=Math.max(2,so.w+dx);o.y=so.y+dy;o.h=Math.max(2,so.h-dy);}
+  else if(h==='tl'){o.x=so.x+dx;o.w=Math.max(2,so.w-dx);o.y=so.y+dy;o.h=Math.max(2,so.h-dy);}
+  else if(h==='r'){o.w=Math.max(2,so.w+dx);}
+  else if(h==='b'){o.h=Math.max(2,so.h+dy);}
+}
+
+// ─── HIT TEST ─────────────────────────────────────────────────
+function hitTest(w){
+  const thr=5/zoom/pxFt;
+  // Fence endpoints first
+  for(const f of S.fences){
+    for(let i=0;i<f.pts.length;i++){
+      if(dst(w,f.pts[i])<thr)return{type:'fence-pt',id:f.id,pi:i};
+    }
+  }
+  // Gates (check before fence lines so they're easier to click)
+  for(const f of S.fences){
+    for(let gi=0;gi<f.gates.length;gi++){
+      const g=f.gates[gi];
+      if(g.si>=f.pts.length-1)continue;
+      const a=f.pts[g.si],b=f.pts[g.si+1];
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const cx=a.x+g.t*dx, cy=a.y+g.t*dy;
+      if(dst(w,{x:cx,y:cy})<g.sz/2+0.5)return{type:'gate',id:f.id,gi};
+    }
+  }
+  // Notes
+  for(const n of S.notes){
+    const hw=(n._tw||40)/2, hh=(n._th||20)/2+8; // +8 for tail
+    if(w.x>=n.x-hw&&w.x<=n.x+hw&&w.y>=n.y-hh&&w.y<=n.y+hh)return{type:'note',id:n.id};
+  }
+  // Background image
+  if(bgImg&&w.x>=bgImg.x&&w.x<=bgImg.x+bgImg.w&&w.y>=bgImg.y&&w.y<=bgImg.y+bgImg.h)
+    return{type:'bg',id:'bg'};
+  // Objects (back to front, reversed)
+  for(let i=S.objs.length-1;i>=0;i--){
+    const o=S.objs[i];
+    if(w.x>=o.x&&w.x<=o.x+o.w&&w.y>=o.y&&w.y<=o.y+o.h)return{type:'object',id:o.id};
+  }
+  // Fence segments
+  for(const f of S.fences){
+    for(let i=0;i<f.pts.length-1;i++){
+      if(d2seg(w,f.pts[i],f.pts[i+1])<0.4)return{type:'fence',id:f.id,si:i};
+    }
+  }
+  return null;
+}
+function nearestSegment(w){
+  let best=null,bd=Infinity;
+  for(const f of S.fences){
+    for(let i=0;i<f.pts.length-1;i++){
+      const a=f.pts[i],b=f.pts[i+1];
+      const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;
+      if(!l2)continue;
+      let t=((w.x-a.x)*dx+(w.y-a.y)*dy)/l2;
+      t=Math.max(0.05,Math.min(0.95,t));
+      const np={x:a.x+t*dx,y:a.y+t*dy};
+      const d=dst(w,np);
+      if(d<bd){bd=d;best={fid:f.id,si:i,t,d};}
+    }
+  }
+  return best;
+}
+
+// ─── SELECTION ────────────────────────────────────────────────
+function selItem(h){
+  S.selId=h.id; S.selType=h.type==='fence-pt'?'fence':h.type;
+  S.selGateIdx=(h.type==='gate')?h.gi:null;
+  updateSidebar();
+}
+function updateSidebar(){
+  if(S.selType==='fence'){
+    const f=S.fences.find(x=>x.id===S.selId);
+    if(f){
+      document.getElementById('fn').value=f.name;
+      document.getElementById('fnotes').value=f.notes||'';
+      document.querySelectorAll('.cd').forEach(d=>d.classList.toggle('active',d.dataset.c===f.color));
+      fColor=f.color;
+    }
+  }
+  const gsp=document.getElementById('gate-sel-panel');
+  if(gsp)gsp.style.display=S.selType==='gate'?'block':'none';
+  renderFList();
+}
+function updateSelFence(){
+  if(S.selType!=='fence')return;
+  const f=S.fences.find(x=>x.id===S.selId);
+  if(!f)return;
+  const newName=document.getElementById('fn').value;
+  // Sync name to ALL fences sharing this color
+  S.fences.filter(x=>x.color===f.color).forEach(x=>x.name=newName);
+  f.notes=document.getElementById('fnotes').value;
+  renderFList();calcMaterials();render();
+}
+
+// Get the shared group name for a color (name of first fence with that color)
+function groupName(color){
+  const f=S.fences.find(x=>x.color===color);
+  return f?f.name:'';
+}
+
+// ─── RENDER ───────────────────────────────────────────────────
+function render(){
+  ctx.clearRect(0,0,cw(),ch());
+  ctx.save();
+  ctx.translate(vx,vy);
+  ctx.scale(zoom*pxFt,zoom*pxFt);
+  drawGrid();
+  drawBgImage();
+  drawObjs();
+  drawFences();
+  drawNotes();
+  if(drawing)drawPreview();
+  if(tool==='calibrate')drawCalibration();
+  ctx.restore();
+  drawLegend();
+}
+function drawLegend(){
+  const groups=colorGroups();
+  if(!groups.length)return;
+  const pad=10, swatchW=14, swatchH=14, rowH=20, fontSize=12;
+  const lines=groups.map(c=>({color:c,label:fenceLabel(c)}));
+  const maxW=Math.max(...lines.map(l=>{
+    ctx.font=`${fontSize}px sans-serif`;
+    return ctx.measureText(l.label).width;
+  }));
+  const boxW=pad*2+swatchW+8+maxW;
+  const boxH=pad*2+lines.length*rowH-4;
+  const bx=12, by=ch()-boxH-12;
+
+  // Background
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.strokeStyle='rgba(0,0,0,0.15)';
+  ctx.lineWidth=1;
+  rr(ctx,bx,by,boxW,boxH,6);
+  ctx.fill();ctx.stroke();
+
+  // Title
+  ctx.fillStyle='#444';
+  ctx.font=`bold ${fontSize-1}px sans-serif`;
+  ctx.textAlign='left';
+  ctx.fillText('FENCE LEGEND',bx+pad,by+pad+10);
+
+  // Rows
+  lines.forEach((l,i)=>{
+    const ry=by+pad+rowH*(i+1)+2;
+    ctx.fillStyle=l.color;
+    ctx.fillRect(bx+pad,ry-swatchH+3,swatchW,swatchH);
+    ctx.strokeStyle='rgba(0,0,0,0.2)';ctx.lineWidth=0.5;
+    ctx.strokeRect(bx+pad,ry-swatchH+3,swatchW,swatchH);
+    ctx.fillStyle='#222';
+    ctx.font=`${fontSize}px sans-serif`;
+    ctx.fillText(l.label,bx+pad+swatchW+8,ry);
+  });
+  ctx.restore();
+}
+
+const IS=()=>1/(zoom*pxFt); // inverse scale
+
+function drawGrid(){
+  const is=IS();
+  const l=-vx*is, t=-vy*is, r=(cw()-vx)*is, b=(ch()-vy)*is;
+  ctx.lineCap='butt';
+  if(zoom*pxFt>4){
+    ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.lineWidth=is*0.6;
+    for(let x=Math.floor(l);x<=r;x++){ctx.beginPath();ctx.moveTo(x,t);ctx.lineTo(x,b);ctx.stroke();}
+    for(let y=Math.floor(t);y<=b;y++){ctx.beginPath();ctx.moveTo(l,y);ctx.lineTo(r,y);ctx.stroke();}
+  }
+  ctx.strokeStyle='rgba(0,0,0,0.13)'; ctx.lineWidth=is*1;
+  for(let x=Math.floor(l/10)*10;x<=r;x+=10){ctx.beginPath();ctx.moveTo(x,t);ctx.lineTo(x,b);ctx.stroke();}
+  for(let y=Math.floor(t/10)*10;y<=b;y+=10){ctx.beginPath();ctx.moveTo(l,y);ctx.lineTo(r,y);ctx.stroke();}
+  ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=is*1.5;
+  ctx.beginPath();ctx.moveTo(-3,0);ctx.lineTo(3,0);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,-3);ctx.lineTo(0,3);ctx.stroke();
+}
+
+function drawObjs(){
+  const is=IS();
+  for(const o of S.objs){
+    const sel=S.selId===o.id;
+    ctx.save();
+    if(o.type==='tree'||o.type==='bush'){
+      const rx=o.w/2,ry=o.h/2,cx=o.x+rx,cy=o.y+ry;
+      ctx.fillStyle=o.color; ctx.strokeStyle=sel?'#e94560':'rgba(0,0,0,0.4)';
+      ctx.lineWidth=is*(sel?2:1);
+      ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+      if(o.type==='tree'){ctx.fillStyle='#7a3b10';ctx.fillRect(cx-rx*.08,cy+ry*.4,rx*.16,ry*.4);}
+    } else if(o.type==='pool'){
+      const rx=o.w/2,ry=o.h/2,cx=o.x+rx,cy=o.y+ry;
+      ctx.fillStyle=o.color; ctx.strokeStyle=sel?'#e94560':'#2980b9';
+      ctx.lineWidth=is*(sel?2:1.5);
+      rr(ctx,o.x,o.y,o.w,o.h,Math.min(rx,ry)*0.35);ctx.fill();ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=is*0.5;
+      for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(o.x+1,o.y+(o.h/3)*i);ctx.lineTo(o.x+o.w-1,o.y+(o.h/3)*i);ctx.stroke();}
+    } else {
+      ctx.fillStyle=o.color; ctx.strokeStyle=sel?'#e94560':'rgba(0,0,0,0.35)';
+      ctx.lineWidth=is*(sel?2:1);
+      ctx.fillRect(o.x,o.y,o.w,o.h); ctx.strokeRect(o.x,o.y,o.w,o.h);
+      if(o.type==='house'){
+        ctx.strokeStyle=sel?'#e94560':'#8B4513'; ctx.lineWidth=is*1.5;
+        ctx.beginPath();ctx.moveTo(o.x,o.y+o.h*.32);ctx.lineTo(o.x+o.w/2,o.y);ctx.lineTo(o.x+o.w,o.y+o.h*.32);ctx.stroke();
+      }
+    }
+    ctx.fillStyle='#333'; ctx.font=`bold ${is*10}px sans-serif`; ctx.textAlign='center';
+    const ly=(o.type==='tree'||o.type==='bush')?o.y+o.h+is*10:o.y+o.h/2+is*3.5;
+    ctx.fillText(o.lbl,o.x+o.w/2,ly);
+    if(sel){
+      ctx.fillStyle='#666'; ctx.font=`${is*8}px sans-serif`;
+      ctx.fillText(`${o.w.toFixed(0)}ft × ${o.h.toFixed(0)}ft`,o.x+o.w/2,o.y+o.h+is*18);
+      // Resize handles
+      const hs=[{x:o.x+o.w,y:o.y+o.h},{x:o.x,y:o.y+o.h},{x:o.x+o.w,y:o.y},{x:o.x,y:o.y},
+                {x:o.x+o.w,y:o.y+o.h/2},{x:o.x+o.w/2,y:o.y+o.h}];
+      ctx.fillStyle='white'; ctx.strokeStyle='#e94560'; ctx.lineWidth=is;
+      for(const p of hs){ctx.beginPath();ctx.arc(p.x,p.y,is*4,0,Math.PI*2);ctx.fill();ctx.stroke();}
+    }
+    ctx.restore();
+  }
+}
+
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function drawFences(){
+  const is=IS();
+  for(const f of S.fences){
+    if(f.pts.length<2)continue;
+    const sel=S.selId===f.id;
+    ctx.save();
+    // Main line
+    ctx.strokeStyle=f.color; ctx.lineWidth=is*(sel?4:3);
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    if(sel){ctx.shadowColor=f.color;ctx.shadowBlur=is*10;}
+    ctx.beginPath();ctx.moveTo(f.pts[0].x,f.pts[0].y);
+    for(let i=1;i<f.pts.length;i++)ctx.lineTo(f.pts[i].x,f.pts[i].y);
+    ctx.stroke();
+    ctx.shadowBlur=0;
+    // Hatching
+    ctx.strokeStyle=f.color+'70'; ctx.lineWidth=is*0.8;
+    for(let i=0;i<f.pts.length-1;i++)hatch(f.pts[i],f.pts[i+1],is);
+    // Gates
+    for(let gi=0;gi<f.gates.length;gi++)drawGate(f,f.gates[gi],gi,is);
+    // Posts at vertices
+    for(const p of f.pts)drawPost(p,f.color,is);
+    // Footage labels
+    for(let i=0;i<f.pts.length-1;i++)ftLabel(f.pts[i],f.pts[i+1],f.color,is);
+    // Selection handles
+    if(sel){
+      ctx.fillStyle='white'; ctx.strokeStyle=f.color; ctx.lineWidth=is*1.5;
+      for(const p of f.pts){ctx.beginPath();ctx.arc(p.x,p.y,is*5.5,0,Math.PI*2);ctx.fill();ctx.stroke();}
+    }
+    ctx.restore();
+  }
+}
+
+function hatch(a,b,is){
+  const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+  if(len<1)return;
+  const nx=-dy/len*.35,ny=dx/len*.35;
+  const steps=Math.floor(len/2);
+  ctx.beginPath();
+  for(let i=1;i<steps;i++){
+    const t=i/steps,px=a.x+t*dx,py=a.y+t*dy;
+    ctx.moveTo(px-nx,py-ny);ctx.lineTo(px+nx,py+ny);
+  }
+  ctx.stroke();
+}
+
+function drawPost(p,color,is){
+  ctx.fillStyle='#222'; ctx.strokeStyle=color; ctx.lineWidth=is*0.8;
+  ctx.beginPath();ctx.arc(p.x,p.y,is*3,0,Math.PI*2);ctx.fill();ctx.stroke();
+}
+
+function ftLabel(a,b,color,is){
+  const ft=dst(a,b);
+  if(ft<0.5)return;
+  const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+  const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+  const nx=-dy/len*is*9,ny=dx/len*is*9;
+  ctx.font=`bold ${is*9}px sans-serif`;
+  ctx.textAlign='center';
+  ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=is*3;
+  ctx.strokeText(ft.toFixed(1)+"'",mx+nx,my+ny);
+  ctx.fillStyle=color;
+  ctx.fillText(ft.toFixed(1)+"'",mx+nx,my+ny);
+}
+
+function drawGate(f,g,gi,is){
+  if(g.si>=f.pts.length-1)return;
+  const a=f.pts[g.si],b=f.pts[g.si+1];
+  const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+  if(len<0.1)return;
+  const ux=dx/len,uy=dy/len,hw=g.sz/2;
+  const cx=a.x+g.t*dx,cy=a.y+g.t*dy;
+  const gx1=cx-ux*hw,gy1=cy-uy*hw,gx2=cx+ux*hw,gy2=cy+uy*hw;
+  const sel=S.selType==='gate'&&S.selId===f.id&&S.selGateIdx===gi;
+  // Clear gap
+  ctx.save();
+  ctx.strokeStyle='#ececec'; ctx.lineWidth=is*6;
+  ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();
+  ctx.restore();
+  // Selection highlight ring
+  if(sel){
+    ctx.strokeStyle='#FFD700'; ctx.lineWidth=is*2;
+    ctx.beginPath();ctx.arc(cx,cy,hw+is*3,0,Math.PI*2);ctx.stroke();
+  }
+  // Gate posts (brown squares, gold when selected)
+  ctx.fillStyle=sel?'#DAA520':'#7B4B1A';
+  const ps=is*4;
+  ctx.fillRect(gx1-ps/2,gy1-ps/2,ps,ps);
+  ctx.fillRect(gx2-ps/2,gy2-ps/2,ps,ps);
+  // Gate panel
+  ctx.strokeStyle=sel?'#DAA520':'#7B4B1A'; ctx.lineWidth=is*1.5;
+  ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();
+  // Swing arc — flip reverses which side the gate opens
+  ctx.strokeStyle='#7B4B1A60'; ctx.lineWidth=is*0.8;
+  const ang=Math.atan2(gy2-gy1,gx2-gx1);
+  const flp=g.flip||false;
+  const rightHinge=g.hinge==='right';
+  if(g.gt==='double'){
+    ctx.beginPath();ctx.arc(gx1,gy1,hw,ang,flp?ang-Math.PI/2:ang+Math.PI/2,flp);ctx.stroke();
+    ctx.beginPath();ctx.arc(gx2,gy2,hw,ang+Math.PI,flp?ang+Math.PI/2:ang+Math.PI*1.5,flp);ctx.stroke();
+  } else if(g.gt!=='slide'){
+    if(rightHinge){
+      // hinge at right post, panel hangs toward left (ang+π direction)
+      ctx.beginPath();ctx.arc(gx2,gy2,g.sz,ang+Math.PI,flp?ang+Math.PI/2:ang+Math.PI*1.5,flp);ctx.stroke();
+    } else {
+      // hinge at left post, panel hangs toward right (ang direction)
+      ctx.beginPath();ctx.arc(gx1,gy1,g.sz,ang,flp?ang-Math.PI/2:ang+Math.PI/2,flp);ctx.stroke();
+    }
+  }
+  // Gate width label (above center)
+  const ny2=-uy*is*9, nx2=-(-uy)*is*9; // perpendicular offset upward
+  const perpX=-uy, perpY=ux;
+  ctx.fillStyle='#5D3A0E'; ctx.font=`bold ${is*8}px sans-serif`; ctx.textAlign='center';
+  ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=is*2.5;
+  const lx=cx+perpX*is*10, ly=cy+perpY*is*10;
+  ctx.strokeText(g.sz+"' gate",lx,ly);
+  ctx.fillText(g.sz+"' gate",lx,ly);
+
+  // Side measurements: gate post → nearest fence vertex on each side
+  const distLeft=dst({x:gx1,y:gy1},a);   // gate post 1 → segment start
+  const distRight=dst({x:gx2,y:gy2},b);  // gate post 2 → segment end
+
+  const sideOffX=perpX*is*9, sideOffY=perpY*is*9;
+  ctx.font=`${is*7.5}px sans-serif`; ctx.fillStyle='#333';
+
+  // Left side label — midpoint between a and gx1
+  if(distLeft>0.2){
+    const mlx=(a.x+gx1)/2+sideOffX, mly=(a.y+gy1)/2+sideOffY;
+    ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=is*2;
+    ctx.strokeText(distLeft.toFixed(1)+"'",mlx,mly);
+    ctx.fillText(distLeft.toFixed(1)+"'",mlx,mly);
+  }
+  // Right side label — midpoint between gx2 and b
+  if(distRight>0.2){
+    const mrx=(gx2+b.x)/2+sideOffX, mry=(gy2+b.y)/2+sideOffY;
+    ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=is*2;
+    ctx.strokeText(distRight.toFixed(1)+"'",mrx,mry);
+    ctx.fillText(distRight.toFixed(1)+"'",mrx,mry);
+  }
+}
+
+function drawNotes(){
+  const is=IS();
+  for(const n of S.notes){
+    if(editingNoteId===n.id)continue; // skip while overlay is open
+    const sel=S.selId===n.id;
+    const lines=(n.txt||'').split('\n');
+    const fs=is*11;
+    ctx.font=`${fs}px sans-serif`;
+    const lineH=fs*1.4;
+    const pad=is*7;
+    const tw=Math.max(...lines.map(l=>ctx.measureText(l).width))+pad*2;
+    const th=lines.length*lineH+pad*1.5;
+    const bx=n.x-tw/2, by=n.y-th/2;
+    // Shadow
+    ctx.shadowColor='rgba(0,0,0,0.18)'; ctx.shadowBlur=is*6;
+    ctx.fillStyle='#fff9c4';
+    ctx.strokeStyle=sel?'#e94560':'#e0a800';
+    ctx.lineWidth=is*(sel?2.5:1.5);
+    rr(ctx,bx,by,tw,th,is*4);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur=0;
+    // Tail pointing down-left
+    ctx.beginPath();
+    ctx.moveTo(n.x-is*4,n.y+th/2-is*1);
+    ctx.lineTo(n.x-is*12,n.y+th/2+is*7);
+    ctx.lineTo(n.x+is*4,n.y+th/2-is*1);
+    ctx.fillStyle='#fff9c4'; ctx.fill();
+    ctx.strokeStyle=sel?'#e94560':'#e0a800'; ctx.lineWidth=is*(sel?2.5:1.5);
+    ctx.beginPath();
+    ctx.moveTo(n.x-is*4,n.y+th/2);
+    ctx.lineTo(n.x-is*12,n.y+th/2+is*7);
+    ctx.lineTo(n.x+is*4,n.y+th/2);
+    ctx.stroke();
+    // Text lines
+    ctx.fillStyle='#333'; ctx.textAlign='center';
+    lines.forEach((l,i)=>{
+      ctx.fillText(l, n.x, by+pad+fs*0.85+i*lineH);
+    });
+    // Dims stored for hit test
+    n._tw=tw; n._th=th;
+  }
+}
+
+function drawBgImage(){
+  if(!bgImg)return;
+  const is=IS();
+  ctx.save();
+  ctx.globalAlpha=bgOpacity;
+  ctx.drawImage(bgImg.img, bgImg.x, bgImg.y, bgImg.w, bgImg.h);
+  ctx.globalAlpha=1;
+  // Border when selected
+  if(S.selType==='bg'){
+    ctx.strokeStyle='#3498db'; ctx.lineWidth=is*2;
+    ctx.setLineDash([is*4,is*3]);
+    ctx.strokeRect(bgImg.x,bgImg.y,bgImg.w,bgImg.h);
+    ctx.setLineDash([]);
+    // Corner handles
+    const hs=[{x:bgImg.x,y:bgImg.y},{x:bgImg.x+bgImg.w,y:bgImg.y},
+              {x:bgImg.x,y:bgImg.y+bgImg.h},{x:bgImg.x+bgImg.w,y:bgImg.y+bgImg.h}];
+    ctx.fillStyle='white'; ctx.strokeStyle='#3498db'; ctx.lineWidth=is;
+    for(const h of hs){ctx.beginPath();ctx.arc(h.x,h.y,is*5,0,Math.PI*2);ctx.fill();ctx.stroke();}
+  }
+  ctx.restore();
+}
+
+function drawCalibration(){
+  if(!calPt1)return;
+  const is=IS();
+  ctx.save();
+  ctx.strokeStyle='#e74c3c'; ctx.lineWidth=is*2;
+  ctx.setLineDash([is*4,is*3]);
+  ctx.beginPath(); ctx.moveTo(calPt1.x,calPt1.y);
+  if(calPt2){
+    ctx.lineTo(calPt2.x,calPt2.y);
+    // Distance label
+    const d=dst(calPt1,calPt2);
+    const mx=(calPt1.x+calPt2.x)/2, my=(calPt1.y+calPt2.y)/2;
+    ctx.font=`bold ${is*10}px sans-serif`; ctx.fillStyle='#e74c3c';
+    ctx.strokeStyle='white'; ctx.lineWidth=is*3; ctx.setLineDash([]);
+    ctx.strokeText(d.toFixed(1)+"ft",mx,my-is*8);
+    ctx.fillText(d.toFixed(1)+"ft",mx,my-is*8);
+  } else {
+    const cur=c2w(lastMouse.x,lastMouse.y);
+    ctx.lineTo(cur.x,cur.y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Endpoints
+  ctx.fillStyle='#e74c3c';
+  ctx.beginPath();ctx.arc(calPt1.x,calPt1.y,is*4,0,Math.PI*2);ctx.fill();
+  if(calPt2){ctx.beginPath();ctx.arc(calPt2.x,calPt2.y,is*4,0,Math.PI*2);ctx.fill();}
+  ctx.restore();
+}
+
+function drawPreview(){
+  if(!dPts.length)return;
+  const is=IS();
+  const cw2=c2w(lastMouse.x,lastMouse.y);
+  const sn=snapAll(cw2,null,null);
+  ctx.save();
+  ctx.strokeStyle=fColor; ctx.lineWidth=is*3;
+  ctx.setLineDash([is*5,is*4]); ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(dPts[0].x,dPts[0].y);
+  for(let i=1;i<dPts.length;i++)ctx.lineTo(dPts[i].x,dPts[i].y);
+  ctx.lineTo(sn.x,sn.y);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=fColor;
+  ctx.beginPath();ctx.arc(sn.x,sn.y,is*5,0,Math.PI*2);ctx.fill();
+  let tot=0;
+  for(let i=0;i<dPts.length-1;i++)tot+=dst(dPts[i],dPts[i+1]);
+  tot+=dst(dPts[dPts.length-1],sn);
+  ctx.font=`bold ${is*10}px sans-serif`; ctx.fillStyle='#222'; ctx.textAlign='left';
+  ctx.strokeStyle='white'; ctx.lineWidth=is*3;
+  ctx.strokeText(tot.toFixed(1)+"ft",sn.x+is*7,sn.y-is*7);
+  ctx.fillText(tot.toFixed(1)+"ft",sn.x+is*7,sn.y-is*7);
+  ctx.restore();
+}
+
+// ─── MATERIALS ────────────────────────────────────────────────
+function mrow(label,val){
+  return `<div class="mr"><span>${label}</span><span class="mc">${val}</span></div>`;
+}
+
+// Returns stats for a GROUP of fence lines (same color = same fence)
+function groupStats(fences){
+  // Build graph across all lines in this group to correctly count shared points
+  const nkey=p=>`${Math.round(p.x*10)},${Math.round(p.y*10)}`;
+  const graph=new Map();
+  let ft=0,gp=0,g4=0,g5=0,g8=0,g10=0,gc=0;
+  for(const f of fences){
+    if(f.pts.length<2)continue;
+    for(const p of f.pts){const k=nkey(p);if(!graph.has(k))graph.set(k,new Set());}
+    for(let i=0;i<f.pts.length-1;i++){
+      const k1=nkey(f.pts[i]),k2=nkey(f.pts[i+1]);
+      graph.get(k1).add(k2); graph.get(k2).add(k1);
+      ft+=dst(f.pts[i],f.pts[i+1]);
+    }
+    for(const g of f.gates){
+      gp+=2;
+      if(g.sz===4)g4++; else if(g.sz===5)g5++;
+      else if(g.sz===8)g8++; else if(g.sz===10)g10++; else gc++;
+    }
+  }
+  let ep=0,cp=0,t3=0,t4=0;
+  for(const[,nb]of graph){
+    const d=nb.size;
+    if(d===1)ep++; else if(d===2)cp++; else if(d===3)t3++; else if(d>=4)t4++;
+  }
+  return{ep,cp,t3,t4,gp,g4,g5,g8,g10,gc,ft};
+}
+
+// Returns ordered unique colors in the order they were first drawn
+function colorGroups(){
+  const seen=[], order=[];
+  for(const f of S.fences){
+    if(!seen.includes(f.color)){seen.push(f.color);order.push(f.color);}
+  }
+  return order;
+}
+
+// Label: typed group name, with "Fence N" as fallback
+function fenceLabel(color){
+  const name=groupName(color);
+  if(name)return name;
+  return 'Fence '+(colorGroups().indexOf(color)+1);
+}
+
+// Single-fence stats helper kept for PDF export per-line rows
+function fenceStats(f){
+  return groupStats([f]);
+}
+
+function calcMaterials(){
+  const body=document.getElementById('mat-body');
+  if(!body)return;
+  let html='';
+  let totFt=0,totEp=0,totCp=0,totGp=0,totG4=0,totG5=0,totG8=0,totG10=0,totGc=0;
+  const groups=colorGroups();
+
+  for(const color of groups){
+    const grpFences=S.fences.filter(f=>f.color===color);
+    const s=groupStats(grpFences);
+    totFt+=s.ft; totEp+=s.ep; totCp+=s.cp;
+    totGp+=s.gp; totG4+=s.g4; totG5+=s.g5; totG8+=s.g8; totG10+=s.g10; totGc+=s.gc;
+
+    // Sub-labels: individual fence line names under this color
+    const subNames=grpFences.map(f=>`<span style="font-size:10px;color:#aaa;">${f.name}</span>`).join(' · ');
+    const gateRows=(s.g4?mrow('4ft Single',s.g4):'')
+      +(s.g5?mrow('5ft Single',s.g5):'')
+      +(s.g8?mrow('8ft Double',s.g8):'')
+      +(s.g10?mrow('10ft Double',s.g10):'')
+      +(s.gc?mrow('Custom Gate',s.gc):'');
+    const postRows=mrow('End Posts',s.ep)
+      +mrow('Corner Posts',s.cp)
+      +(s.t3?mrow('3-Way Posts',s.t3):'')
+      +(s.t4?mrow('4-Way Posts',s.t4):'')
+      +(s.gp?mrow('Gate Posts',s.gp):'');
+
+    html+=`
+    <div style="border:1px solid ${color};border-radius:6px;margin-bottom:8px;overflow:hidden;">
+      <div style="background:${color}22;border-bottom:1px solid ${color}55;padding:5px 8px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="width:11px;height:11px;border-radius:2px;background:${color};display:inline-block;flex-shrink:0;"></span>
+          <span style="font-size:12px;font-weight:700;">${fenceLabel(color)}</span>
+          <span class="mc" style="margin-left:auto;font-size:11px;">${s.ft.toFixed(1)} ft</span>
+        </div>
+        <div style="margin-top:2px;padding-left:17px;">${subNames}</div>
+      </div>
+      <div style="padding:4px 8px;">${postRows}${gateRows}</div>
+    </div>`;
+  }
+
+  const numGroups=groups.length;
+  if(numGroups>1){
+    html+=`<div style="border-top:2px solid #1a4a7a;padding-top:6px;margin-top:2px;">
+      <div class="st">Grand Totals</div>
+      ${mrow('End Posts',totEp)}
+      ${mrow('Corner Posts',totCp)}
+      ${totGp?mrow('Gate Posts',totGp):''}
+      ${totG4?mrow('4ft Single',totG4):''}
+      ${totG5?mrow('5ft Single',totG5):''}
+      ${totG8?mrow('8ft Double',totG8):''}
+      ${totG10?mrow('10ft Double',totG10):''}
+      ${totGc?mrow('Custom Gates',totGc):''}
+      <div class="mr" style="font-weight:700;border-top:1px solid #1a4a7a;margin-top:4px;padding-top:4px;">
+        <span>TOTAL</span><span class="mc">${totFt.toFixed(1)} ft</span>
+      </div>
+    </div>`;
+  } else if(S.fences.length===0){
+    html='<div style="color:#666;font-size:11px;padding:8px 0;">Draw a fence to see materials.</div>';
+  }
+
+  body.innerHTML=html;
+  calcMaterials._totals={totFt,totEp,totCp,totGp,totG4,totG5,totG8,totG10,totGc};
+  calcMaterials._groups=groups;
+}
+
+function renderFList(){
+  const el=document.getElementById('flist');
+  el.innerHTML='';
+  for(const f of S.fences){
+    let ft=0;for(let i=0;i<f.pts.length-1;i++)ft+=dst(f.pts[i],f.pts[i+1]);
+    const d=document.createElement('div');
+    d.className='fl-item'+(S.selId===f.id?' sel':'');
+    d.innerHTML=`<div class="fci" style="background:${f.color}"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</div>
+        <div style="font-size:10px;color:#888;">${ft.toFixed(1)}ft • ${f.gates.length} gate${f.gates.length!==1?'s':''}</div>
+      </div>`;
+    d.onclick=()=>{S.selId=f.id;S.selType='fence';updateSidebar();render();};
+    el.appendChild(d);
+  }
+}
+
+// ─── ZOOM / FIT ───────────────────────────────────────────────
+function doZoom(cx,cy,f){
+  const nz=Math.max(0.05,Math.min(12,zoom*f));
+  vx=cx-(cx-vx)*(nz/zoom); vy=cy-(cy-vy)*(nz/zoom); zoom=nz;
+  document.getElementById('zlbl').textContent=Math.round(zoom*100)+'%';
+  render();
+}
+function fitAll(){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity,any=false;
+  for(const f of S.fences)for(const p of f.pts){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);any=true;}
+  for(const o of S.objs){minX=Math.min(minX,o.x);minY=Math.min(minY,o.y);maxX=Math.max(maxX,o.x+o.w);maxY=Math.max(maxY,o.y+o.h);any=true;}
+  if(!any){vx=cw()/2;vy=ch()/2;zoom=1;render();return;}
+  const pad=8,sw=(maxX-minX+pad*2)*pxFt,sh=(maxY-minY+pad*2)*pxFt;
+  zoom=Math.min(cw()/sw,ch()/sh,8);
+  vx=cw()/2-((minX+maxX)/2)*pxFt*zoom;
+  vy=ch()/2-((minY+maxY)/2)*pxFt*zoom;
+  document.getElementById('zlbl').textContent=Math.round(zoom*100)+'%';
+  render();
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────
+function saveHist(){
+  const s=JSON.stringify({fences:S.fences,objs:S.objs,notes:S.notes,nid:S.nid});
+  hist=hist.slice(0,hIdx+1);hist.push(s);
+  if(hist.length>60)hist.shift();else hIdx++;
+}
+function undo(){if(hIdx<=0)return;hIdx--;restore();}
+function redo(){if(hIdx>=hist.length-1)return;hIdx++;restore();}
+function restore(){
+  const s=JSON.parse(hist[hIdx]);
+  S.fences=s.fences;S.objs=s.objs;S.notes=s.notes;S.nid=s.nid;
+  S.selId=null;S.selType=null;
+  calcMaterials();renderFList();render();
+}
+
+// ─── DELETE / EDIT ────────────────────────────────────────────
+function deleteSelected(){
+  if(!S.selId)return;saveHist();
+  if(S.selType==='fence')S.fences=S.fences.filter(f=>f.id!==S.selId);
+  else if(S.selType==='object')S.objs=S.objs.filter(o=>o.id!==S.selId);
+  else if(S.selType==='note')S.notes=S.notes.filter(n=>n.id!==S.selId);
+  else if(S.selType==='bg'){bgImg=null;}
+  else if(S.selType==='gate'){
+    const f=S.fences.find(x=>x.id===S.selId);
+    if(f&&S.selGateIdx!=null)f.gates.splice(S.selGateIdx,1);
+    S.selGateIdx=null;
+  }
+  S.selId=null;S.selType=null;calcMaterials();renderFList();render();
+}
+function flipGate(fid,gi){
+  const f=S.fences.find(x=>x.id===fid);
+  if(!f||gi==null||gi>=f.gates.length)return;
+  saveHist();
+  f.gates[gi].flip=!f.gates[gi].flip;
+  render();
+}
+function flipSelectedGate(){
+  if(S.selType==='gate')flipGate(S.selId,S.selGateIdx);
+}
+function swapHinge(){
+  if(S.selType!=='gate')return;
+  const f=S.fences.find(x=>x.id===S.selId);
+  if(!f||S.selGateIdx==null)return;
+  saveHist();
+  const g=f.gates[S.selGateIdx];
+  g.hinge=g.hinge==='right'?'left':'right';
+  render();
+}
+function editLabel(h){
+  if(h.type==='object'){
+    const o=S.objs.find(x=>x.id===h.id);if(!o)return;
+    const l=prompt('Label:',o.lbl);if(l!==null){saveHist();o.lbl=l;render();}
+  } else if(h.type==='note'){
+    openNoteEditor(h.id);
+  }
+}
+
+function openNoteEditor(id){
+  const n=S.notes.find(x=>x.id===id);if(!n)return;
+  editingNoteId=id;
+  const ed=document.getElementById('note-editor');
+  const ta=document.getElementById('note-ta');
+  ta.value=n.txt;
+  // Position overlay near the note in canvas coords
+  const cp=w2c(n.x,n.y);
+  const rect=canvas.getBoundingClientRect();
+  const contRect=cont.getBoundingClientRect();
+  let ex=cp.x+10, ey=cp.y+10;
+  if(ex+200>contRect.width)ex=cp.x-215;
+  if(ey+110>contRect.height)ey=cp.y-120;
+  ed.style.left=Math.max(4,ex)+'px';
+  ed.style.top=Math.max(4,ey)+'px';
+  ed.style.display='block';
+  setTimeout(()=>ta.focus(),30);
+  render();
+}
+
+function commitNote(){
+  if(editingNoteId===null)return;
+  const n=S.notes.find(x=>x.id===editingNoteId);
+  if(n){
+    const txt=document.getElementById('note-ta').value.trim();
+    if(!txt){S.notes=S.notes.filter(x=>x.id!==editingNoteId);}
+    else{n.txt=txt;}
+    saveHist();
+  }
+  editingNoteId=null;
+  document.getElementById('note-editor').style.display='none';
+  render();
+}
+
+function cancelNote(){
+  if(editingNoteId!==null){
+    // If note is empty (just created), remove it
+    const n=S.notes.find(x=>x.id===editingNoteId);
+    if(n&&!n.txt)S.notes=S.notes.filter(x=>x.id!==editingNoteId);
+  }
+  editingNoteId=null;
+  document.getElementById('note-editor').style.display='none';
+  render();
+}
+
+// ─── CONTEXT MENU ─────────────────────────────────────────────
+function ctxDel(){deleteSelected();}
+function ctxDup(){
+  if(!S.selId)return;saveHist();
+  if(S.selType==='fence'){
+    const f=S.fences.find(x=>x.id===S.selId);
+    if(f){const n={...JSON.parse(JSON.stringify(f)),id:S.nid++,name:f.name+' (copy)'};n.pts=n.pts.map(p=>({x:p.x+2,y:p.y+2}));S.fences.push(n);S.selId=n.id;}
+  } else if(S.selType==='object'){
+    const o=S.objs.find(x=>x.id===S.selId);
+    if(o){const n={...JSON.parse(JSON.stringify(o)),id:S.nid++,x:o.x+2,y:o.y+2};S.objs.push(n);S.selId=n.id;}
+  }
+  calcMaterials();renderFList();render();
+}
+function ctxGate(){setTool('gate');}
+function ctxFront(){
+  if(S.selType==='object'){const i=S.objs.findIndex(o=>o.id===S.selId);if(i>=0){S.objs.push(S.objs.splice(i,1)[0]);render();}}
+}
+function ctxBack(){
+  if(S.selType==='object'){const i=S.objs.findIndex(o=>o.id===S.selId);if(i>=0){S.objs.unshift(S.objs.splice(i,1)[0]);render();}}
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────────
+function setTool(t){
+  tool=t;
+  if(drawing&&t!=='fence'){if(dPts.length>1)finishFence();else cancelFence();}
+  document.querySelectorAll('.tb[id^="btn-"]').forEach(b=>b.classList.remove('active'));
+  const b=document.getElementById('btn-'+t);if(b)b.classList.add('active');
+  const cur={select:'default',pan:'grab',fence:'crosshair',object:'cell',gate:'crosshair',note:'text'};
+  canvas.style.cursor=cur[t]||'default';
+  const msgs={select:'Click to select. Drag to move. Double-click label to edit.',
+    pan:'Drag to pan. Pinch or scroll to zoom.',
+    fence:'Click to add points. Double-click or click existing point to finish.',
+    object:'Click canvas to place selected object type.',
+    gate:'Click on a fence line to add a gate.',
+    note:'Click to place a text note.'};
+  setMsg(msgs[t]||'');
+  document.getElementById('s-tool').textContent=t.charAt(0).toUpperCase()+t.slice(1);
+}
+function setObjType(t){
+  objType=t;
+  document.querySelectorAll('.ob').forEach(b=>b.classList.remove('active'));
+  const b=document.getElementById('ob-'+t);if(b)b.classList.add('active');
+  setTool('object');
+}
+function pickColor(c){
+  fColor=c;
+  document.querySelectorAll('.cd').forEach(d=>d.classList.toggle('active',d.dataset.c===c));
+  // Auto-fill name: existing group name, or next default "Fence N"
+  const existing=groupName(c);
+  document.getElementById('fn').value=existing||('Fence '+(colorGroups().length+1));
+  if(S.selType==='fence'){
+    const f=S.fences.find(x=>x.id===S.selId);
+    if(f){
+      const oldColor=f.color;
+      // Move this fence to new color group — adopt that group's name or keep its own
+      f.color=c;
+      f.name=existing||f.name;
+      // Sync name to all fences now sharing this color
+      S.fences.filter(x=>x.color===c).forEach(x=>x.name=f.name);
+      document.getElementById('fn').value=f.name;
+      renderFList();calcMaterials();render();
+    }
+  }
+}
+function onGTypeChange(){
+  const type=document.getElementById('gtype').value;
+  const row=document.getElementById('gsb-row');
+  if(type==='slide'){
+    // Sliding = always custom
+    document.getElementById('gsb-a').style.display='none';
+    document.getElementById('gsb-b').style.display='none';
+    setGSzCustom();
+  } else {
+    document.getElementById('gsb-a').style.display='';
+    document.getElementById('gsb-b').style.display='';
+    if(type==='double'){gSzOpts=[8,10];}
+    else{gSzOpts=[4,5];}
+    document.getElementById('gsb-a').textContent=gSzOpts[0]+'ft';
+    document.getElementById('gsb-b').textContent=gSzOpts[1]+'ft';
+    setGSz(gSzOpts[0]);
+  }
+}
+function setGSz(s){
+  gSz=s;
+  document.querySelectorAll('.gsb').forEach(b=>b.classList.remove('active'));
+  if(s===gSzOpts[0])document.getElementById('gsb-a').classList.add('active');
+  else if(s===gSzOpts[1])document.getElementById('gsb-b').classList.add('active');
+  document.getElementById('gcustom').style.display='none';
+}
+function setGSzCustom(){
+  gSz='custom';
+  document.querySelectorAll('.gsb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('gsb-c').classList.add('active');
+  document.getElementById('gcustom').style.display='block';
+}
+function tog(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'':'none';
+}
+function setMsg(m){document.getElementById('s-msg').textContent=m;}
+
+// ─── EXPORT ───────────────────────────────────────────────────
+function renderToTemp(){
+  const tmp=document.createElement('canvas');
+  tmp.width=cw()*2; tmp.height=ch()*2;
+  const tc=tmp.getContext('2d');
+  tc.fillStyle='#ececec'; tc.fillRect(0,0,tmp.width,tmp.height);
+  tc.scale(2,2);
+  tc.drawImage(canvas,0,0);
+  tc.setTransform(1,0,0,1,0,0);
+  // Per color-group legend in top-right
+  const lh=13, pad=8, colW=220;
+  const lines=[];
+  lines.push({text:'MATERIALS SUMMARY',bold:true,color:'#111'});
+  const grpColors=colorGroups();
+  for(const color of grpColors){
+    const grpFences=S.fences.filter(f=>f.color===color);
+    const s=groupStats(grpFences);
+    lines.push({text:'',sep:true});
+    lines.push({text:fenceLabel(color),bold:true,color,dot:color});
+    lines.push({text:`Footage: ${s.ft.toFixed(1)} ft`,color:'#333'});
+    lines.push({text:`End Posts: ${s.ep}`,color:'#333'});
+    lines.push({text:`Corner Posts: ${s.cp}`,color:'#333'});
+    if(s.t3)lines.push({text:`3-Way Posts: ${s.t3}`,color:'#333'});
+    if(s.t4)lines.push({text:`4-Way Posts: ${s.t4}`,color:'#333'});
+    if(s.gp)lines.push({text:`Gate Posts: ${s.gp}`,color:'#333'});
+    if(s.g4)lines.push({text:`4ft Single: ${s.g4}`,color:'#333'});
+    if(s.g5)lines.push({text:`5ft Single: ${s.g5}`,color:'#333'});
+    if(s.g8)lines.push({text:`8ft Double: ${s.g8}`,color:'#333'});
+    if(s.g10)lines.push({text:`10ft Double: ${s.g10}`,color:'#333'});
+    if(s.gc)lines.push({text:`Custom Gates: ${s.gc}`,color:'#333'});
+  }
+  const t=calcMaterials._totals||{};
+  if(grpColors.length>1){
+    lines.push({text:'',sep:true});
+    lines.push({text:'GRAND TOTAL',bold:true,color:'#111'});
+    lines.push({text:`Footage: ${(t.totFt||0).toFixed(1)} ft`,color:'#333'});
+    lines.push({text:`End Posts: ${t.totEp||0}`,color:'#333'});
+    lines.push({text:`Corner Posts: ${t.totCp||0}`,color:'#333'});
+    if(t.totGp)lines.push({text:`Gate Posts: ${t.totGp}`,color:'#333'});
+  }
+  const bh=lines.length*lh+pad*2;
+  const bx=tmp.width-colW-pad*2, by=pad;
+  tc.fillStyle='rgba(255,255,255,0.94)'; tc.strokeStyle='#bbb'; tc.lineWidth=1;
+  tc.fillRect(bx,by,colW+pad*2,bh); tc.strokeRect(bx,by,colW+pad*2,bh);
+  lines.forEach((l,i)=>{
+    const ly=by+pad+lh*0.85+i*lh;
+    if(l.sep){tc.strokeStyle='#ddd';tc.beginPath();tc.moveTo(bx+4,ly-lh*0.3);tc.lineTo(bx+colW+pad*2-4,ly-lh*0.3);tc.stroke();return;}
+    tc.font=(l.bold?'bold ':'')+`${lh-2}px sans-serif`;
+    tc.fillStyle=l.color||'#333'; tc.textAlign='left';
+    if(l.dot){tc.fillStyle=l.dot;tc.fillRect(bx+pad,ly-lh*0.7,8,8);tc.fillStyle=l.color;}
+    tc.fillText(l.text,bx+pad+(l.dot?12:0),ly);
+  });
+  return tmp;
+}
+
+function exportJPEG(){
+  render();
+  const tmp=renderToTemp();
+  const a=document.createElement('a');
+  a.download='fence-drawing.jpg';
+  a.href=tmp.toDataURL('image/jpeg',0.92);
+  a.click();
+}
+
+function exportPDF(){
+  render();
+  const tmp=renderToTemp();
+  const img=tmp.toDataURL('image/png');
+  const w=window.open('','_blank');
+
+  // Build per-fence table rows
+  const frows=S.fences.map(f=>{
+    const s=fenceStats(f); if(!s)return'';
+    const gates=f.gates.map(g=>`${g.sz}ft ${g.gt}`).join(', ')||'—';
+    return`<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;background:${f.color};margin-right:5px;border-radius:2px;vertical-align:middle;"></span>${f.name}</td>
+      <td>${s.ft.toFixed(1)} ft</td>
+      <td>${s.endPosts}</td>
+      <td>${s.cornerPosts}</td>
+      <td>${s.gp}</td>
+      <td>${gates}</td>
+      <td>${f.notes||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Grand totals row
+  const t=calcMaterials._totals||{};
+  const totRow=S.fences.length>1?`<tr style="font-weight:bold;background:#f5f5f5;">
+    <td>TOTAL</td><td>${(t.totFt||0).toFixed(1)} ft</td>
+    <td>${t.totEp||0}</td><td>${t.totCp||0}</td><td>${t.totGp||0}</td>
+    <td>${[t.totG4&&`${t.totG4}× 4ft`,t.totG5&&`${t.totG5}× 5ft`,t.totG8&&`${t.totG8}× 8ft`,t.totG10&&`${t.totG10}× 10ft`,t.totGc&&`${t.totGc}× custom`].filter(Boolean).join(', ')||'—'}</td>
+    <td></td></tr>`:'';
+
+  w.document.write(`<!DOCTYPE html><html><head><title>Security Fence Company – Residential Drawing</title>
+<style>@page{margin:.5in;}body{font-family:Arial,sans-serif;font-size:12px;}
+img{max-width:100%;height:auto;border:1px solid #ddd;}
+h2{font-size:13px;margin:14px 0 6px;border-bottom:2px solid #ccc;padding-bottom:3px;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th,td{padding:5px 8px;border:1px solid #ddd;text-align:left;}
+th{background:#e8e8e8;font-weight:700;}
+</style></head><body>
+<img src="${img}"/>
+<h2>Fence Materials — Per Line</h2>
+<table>
+  <tr><th>Fence</th><th>Footage</th><th>End Posts</th><th>Corner Posts</th><th>Gate Posts</th><th>Gates</th><th>Notes</th></tr>
+  ${frows}${totRow}
+</table>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`);
+  w.document.close();
+}
+
+// ─── CALIBRATION ──────────────────────────────────────────────
+function calibrateDown(w){
+  if(!calPt1){
+    calPt1=w;
+    document.getElementById('cal-overlay').textContent='📏 Now click the second point';
+    render();
+  } else {
+    calPt2=w;
+    render();
+    const measuredFt=dst(calPt1,calPt2);
+    if(measuredFt<0.01){calPt1=null;calPt2=null;render();return;}
+    // Show input dialog instead of prompt()
+    document.getElementById('cal-overlay').style.display='none';
+    document.getElementById('cal-measured').textContent=
+      `Measured line: ${measuredFt.toFixed(2)} ft at current scale`;
+    const inp=document.getElementById('cal-input');
+    inp.value='';
+    document.getElementById('cal-dialog').style.display='block';
+    setTimeout(()=>inp.focus(),30);
+  }
+}
+
+function applyCalibrate(){
+  const realFt=parseFloat(document.getElementById('cal-input').value);
+  if(!realFt||realFt<=0){cancelCalibrate();return;}
+  const measuredFt=dst(calPt1,calPt2);
+  // Keep midpoint fixed in canvas space while rescaling
+  const midW={x:(calPt1.x+calPt2.x)/2, y:(calPt1.y+calPt2.y)/2};
+  const midC=w2c(midW.x,midW.y);
+  pxFt=pxFt*(measuredFt/realFt);
+  vx=midC.x-midW.x*pxFt*zoom;
+  vy=midC.y-midW.y*pxFt*zoom;
+  // Update dropdown to nearest preset
+  const sel=document.getElementById('scalesel');
+  let closest=null,cd=Infinity;
+  for(const o of sel.options){const d=Math.abs(parseFloat(o.value)-pxFt);if(d<cd){cd=d;closest=o;}}
+  if(closest)closest.selected=true;
+  document.getElementById('cal-dialog').style.display='none';
+  calPt1=null;calPt2=null;
+  setTool('select');
+  render();
+}
+
+function cancelCalibrate(){
+  calPt1=null;calPt2=null;
+  document.getElementById('cal-dialog').style.display='none';
+  setTool('select');
+  render();
+}
+
+// ─── BACKGROUND IMAGE ─────────────────────────────────────────
+function loadBgImage(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      // Place image centered in current view, scaled to fit ~80% of canvas
+      const scale=Math.min(cw()*0.8/(img.width*pxFt*zoom), ch()*0.8/(img.height*pxFt*zoom),1);
+      const w=img.width*scale, h=img.height*scale;
+      const cx=c2w(cw()/2,ch()/2);
+      bgImg={img, x:cx.x-w/2, y:cx.y-h/2, w, h};
+      render();
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value=''; // allow re-upload of same file
+}
+
+function removeBgImage(){
+  bgImg=null; S.selType=null; S.selId=null; render();
+}
+
+function setBgOpacity(v){
+  bgOpacity=v/100; render();
+}
+
+// ─── SETOOL PATCH FOR CALIBRATE ───────────────────────────────
+const _origSetTool=setTool;
+setTool=function(t){
+  calPt1=null; calPt2=null;
+  document.getElementById('cal-overlay').style.display=t==='calibrate'?'block':'none';
+  if(t==='calibrate'){
+    // remove active from all tool buttons, activate calibrate
+    document.querySelectorAll('.tb[id^="btn-"]').forEach(b=>b.classList.remove('active'));
+    document.getElementById('btn-calibrate').classList.add('active');
+    canvas.style.cursor='crosshair';
+    setMsg('Click two points spanning a known distance on the image.');
+    document.getElementById('s-tool').textContent='Calibrate';
+    tool='calibrate';
+    if(drawing&&dPts.length>1)finishFence();else if(drawing)cancelFence();
+    return;
+  }
+  document.getElementById('btn-calibrate').classList.remove('active');
+  _origSetTool(t);
+};
+
+// Ctrl+Enter in note textarea = commit; Escape = cancel
+document.getElementById('note-ta').addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();cancelNote();}
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();commitNote();}
+});
+
+saveHist();
+</script>
+</body>
+</html>
