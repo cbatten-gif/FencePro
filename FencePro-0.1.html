@@ -112,6 +112,8 @@ canvas{display:block;cursor:crosshair;}
           <button class="ob" id="ob-tree" onclick="setObjType('tree')">🌳 Tree</button>
           <button class="ob" id="ob-bush" onclick="setObjType('bush')">🌿 Bush</button>
           <button class="ob" id="ob-shed" onclick="setObjType('shed')">🏚 Shed</button>
+          <button class="ob" id="ob-wall" onclick="setObjType('wall')">🧱 Wall</button>
+          <button class="ob" id="ob-concrete" onclick="setObjType('concrete')">⬜ Concrete</button>
         </div>
         <div class="tip">Select type then click canvas to place. Drag corners to resize.</div>
       </div>
@@ -120,7 +122,29 @@ canvas{display:block;cursor:crosshair;}
       <div class="ph" onclick="tog('p-fence')">Fence Properties <span>▼</span></div>
       <div class="pc" id="p-fence">
         <label>Fence Name</label>
-        <input type="text" id="fn" placeholder="e.g. Back Yard" oninput="updateSelFence()">
+        <select id="fn" onchange="updateSelFence()">
+          <option value="4' Black Chain Link">4' Black Chain Link</option>
+          <option value="4' Galvanized Chain Link">4' Galvanized Chain Link</option>
+          <option value="5' Black Chain Link">5' Black Chain Link</option>
+          <option value="5' Galvanized Chain Link">5' Galvanized Chain Link</option>
+          <option value="6' Black Chain Link">6' Black Chain Link</option>
+          <option value="6' Galvanized Chain Link">6' Galvanized Chain Link</option>
+          <option value="6' Wood Privacy Fence">6' Wood Privacy Fence</option>
+          <option value="6' Shadow Box Privacy Fence">6' Shadow Box Privacy Fence</option>
+          <option value="6' Cap Board Wood Privacy Fence (Flush Top)">6' Cap Board Wood Privacy Fence (Flush Top)</option>
+          <option value="6' Cap Board Wood Privacy Fence (With Dados)">6' Cap Board Wood Privacy Fence (With Dados)</option>
+          <option value="8' Standard Wood Privacy">8' Standard Wood Privacy</option>
+          <option value="3 Board Wood Fence">3 Board Wood Fence</option>
+          <option value="4 Board Wood Fence">4 Board Wood Fence</option>
+          <option value="Crossbuck Wood Fence">Crossbuck Wood Fence</option>
+          <option value="Field Fence w/ T Posts">Field Fence w/ T Posts</option>
+          <option value="4' Flat Top Aluminum Ornamental">4' Flat Top Aluminum Ornamental</option>
+          <option value="5' Flat Top Aluminum Ornamental">5' Flat Top Aluminum Ornamental</option>
+          <option value="6' Flat Top Aluminum Ornamental">6' Flat Top Aluminum Ornamental</option>
+          <option value="4' Spear Top Aluminum Ornamental">4' Spear Top Aluminum Ornamental</option>
+          <option value="5' Spear Top Aluminum Ornamental">5' Spear Top Aluminum Ornamental</option>
+          <option value="6' Spear Top Aluminum Ornamental">6' Spear Top Aluminum Ornamental</option>
+        </select>
         <label>Color</label>
         <div class="cr" id="fcolors">
           <div class="cd active" style="background:#e74c3c" data-c="#e74c3c" onclick="pickColor('#e74c3c')"></div>
@@ -181,6 +205,26 @@ canvas{display:block;cursor:crosshair;}
           <button onclick="commitNote()" style="background:#27ae60;color:white;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px;">✓ Done</button>
           <button onclick="cancelNote()" style="background:#e74c3c;color:white;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">✕</button>
         </div>
+      </div>
+    </div>
+    <!-- Object size editor dialog -->
+    <div id="size-dialog" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#16213e;border:2px solid #3498db;border-radius:10px;padding:18px 20px;z-index:200;min-width:240px;box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+      <div style="font-size:13px;font-weight:700;color:#eee;margin-bottom:12px;">📐 Set Object Size</div>
+      <label style="font-size:12px;color:#ccc;">Label</label>
+      <input id="size-lbl" type="text" onkeydown="if(event.key==='Enter')commitSizeEditor();else if(event.key==='Escape')cancelSizeEditor();" style="width:100%;margin:4px 0 10px;font-size:13px;padding:5px 8px;background:#0a2040;border:1px solid #1a4a7a;color:#eee;border-radius:5px;">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <div style="flex:1;">
+          <label style="font-size:12px;color:#ccc;">Width (ft)</label>
+          <input id="size-w" type="number" min="0.5" step="0.5" onkeydown="if(event.key==='Enter')commitSizeEditor();else if(event.key==='Escape')cancelSizeEditor();" style="width:100%;margin-top:4px;font-size:15px;padding:5px 8px;background:#0a2040;border:1px solid #1a4a7a;color:#eee;border-radius:5px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;color:#ccc;">Height (ft)</label>
+          <input id="size-h" type="number" min="0.5" step="0.5" onkeydown="if(event.key==='Enter')commitSizeEditor();else if(event.key==='Escape')cancelSizeEditor();" style="width:100%;margin-top:4px;font-size:15px;padding:5px 8px;background:#0a2040;border:1px solid #1a4a7a;color:#eee;border-radius:5px;">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="cancelSizeEditor()" style="background:#333;color:#eee;border:none;border-radius:5px;padding:6px 14px;cursor:pointer;font-size:12px;">Cancel</button>
+        <button onclick="commitSizeEditor()" style="background:#3498db;color:white;border:none;border-radius:5px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:700;">Apply</button>
       </div>
     </div>
     <!-- Calibration instruction banner -->
@@ -514,9 +558,9 @@ function gateDown(w){
 function placeObj(w){
   saveHist();
   const sn=snap(w);
-  const sizes={house:{w:40,h:30},building:{w:30,h:25},pool:{w:25,h:14},tree:{w:8,h:8},bush:{w:6,h:6},shed:{w:14,h:10}};
+  const sizes={house:{w:40,h:30},building:{w:30,h:25},pool:{w:25,h:14},tree:{w:8,h:8},bush:{w:6,h:6},shed:{w:14,h:10},wall:{w:30,h:3},concrete:{w:20,h:20}};
   const sz=sizes[objType]||{w:20,h:15};
-  const colors={house:'#f0dfc0',building:'#c8d8e8',pool:'#90c8f0',tree:'#4ab840',bush:'#3a9830',shed:'#c8a060'};
+  const colors={house:'#f0dfc0',building:'#c8d8e8',pool:'#90c8f0',tree:'#4ab840',bush:'#3a9830',shed:'#c8a060',wall:'#b0a898',concrete:'#d0ccc4'};
   const id=S.nid++;
   S.objs.push({id,type:objType,x:sn.x-sz.w/2,y:sn.y-sz.h/2,w:sz.w,h:sz.h,
     lbl:objType.charAt(0).toUpperCase()+objType.slice(1),color:colors[objType]||'#e0e0e0'});
@@ -540,7 +584,8 @@ function handleDrag(w){
   const g=parseFloat(document.getElementById('snapft').value)||1;
   if(dragT.type==='object'){
     const o=S.objs.find(x=>x.id===dragT.id);
-    if(o){const sn=snap({x:w.x-dragT.ox,y:w.y-dragT.oy});o.x=sn.x;o.y=sn.y;}
+    if(o){const sn=snap({x:w.x-dragT.ox,y:w.y-dragT.oy});o.x=sn.x;o.y=sn.y;
+      if(o.type==='wall'||o.type==='concrete')calcMaterials();}
   } else if(dragT.type==='fence-pt'){
     const f=S.fences.find(x=>x.id===dragT.id);
     if(f&&dragT.pi<f.pts.length){f.pts[dragT.pi]=snapAll(w,f.id,dragT.pi);calcMaterials();}
@@ -591,6 +636,7 @@ function doResize(w){
   else if(h==='tl'){o.x=so.x+dx;o.w=Math.max(2,so.w-dx);o.y=so.y+dy;o.h=Math.max(2,so.h-dy);}
   else if(h==='r'){o.w=Math.max(2,so.w+dx);}
   else if(h==='b'){o.h=Math.max(2,so.h+dy);}
+  if(o.type==='wall'||o.type==='concrete')calcMaterials();
 }
 
 // ─── HIT TEST ─────────────────────────────────────────────────
@@ -764,6 +810,31 @@ function drawGrid(){
   ctx.beginPath();ctx.moveTo(0,-3);ctx.lineTo(0,3);ctx.stroke();
 }
 
+function segRectClip(ax,ay,bx,by,rx,ry,rw,rh){
+  const dx=bx-ax,dy=by-ay;
+  const p=[-dx,dx,-dy,dy];
+  const q=[ax-rx,rx+rw-ax,ay-ry,ry+rh-ay];
+  let t0=0,t1=1;
+  for(let i=0;i<4;i++){
+    if(p[i]===0){if(q[i]<0)return 0;continue;}
+    const t=q[i]/p[i];
+    if(p[i]<0)t0=Math.max(t0,t);else t1=Math.min(t1,t);
+    if(t0>t1)return 0;
+  }
+  const cx=ax+t0*dx,cy=ay+t0*dy,ex=ax+t1*dx,ey=ay+t1*dy;
+  return Math.sqrt((ex-cx)**2+(ey-cy)**2);
+}
+function fenceFootageOnObj(o){
+  let total=0;
+  for(const f of S.fences){
+    for(let i=0;i<f.pts.length-1;i++){
+      const a=f.pts[i],b=f.pts[i+1];
+      total+=segRectClip(a.x,a.y,b.x,b.y,o.x,o.y,o.w,o.h);
+    }
+  }
+  return total;
+}
+
 function drawObjs(){
   const is=IS();
   for(const o of S.objs){
@@ -782,6 +853,25 @@ function drawObjs(){
       rr(ctx,o.x,o.y,o.w,o.h,Math.min(rx,ry)*0.35);ctx.fill();ctx.stroke();
       ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=is*0.5;
       for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(o.x+1,o.y+(o.h/3)*i);ctx.lineTo(o.x+o.w-1,o.y+(o.h/3)*i);ctx.stroke();}
+    } else if(o.type==='concrete'){
+      ctx.fillStyle=o.color; ctx.strokeStyle=sel?'#e94560':'#9a9690';
+      ctx.lineWidth=is*(sel?2:1.5);
+      ctx.fillRect(o.x,o.y,o.w,o.h); ctx.strokeRect(o.x,o.y,o.w,o.h);
+    } else if(o.type==='wall'){
+      ctx.fillStyle=o.color; ctx.strokeStyle=sel?'#e94560':'#7a7060';
+      ctx.lineWidth=is*(sel?2:1.5);
+      ctx.fillRect(o.x,o.y,o.w,o.h); ctx.strokeRect(o.x,o.y,o.w,o.h);
+      // Brick pattern lines
+      ctx.strokeStyle=sel?'#e9456088':'#7a706066'; ctx.lineWidth=is*0.6;
+      const brickW=o.w/Math.max(1,Math.round(o.w/4));
+      for(let row=0;row<2;row++){
+        const ry=o.y+o.h*(row+1)/3;
+        ctx.beginPath();ctx.moveTo(o.x,ry);ctx.lineTo(o.x+o.w,ry);ctx.stroke();
+        const offset=row%2===0?brickW/2:0;
+        for(let bx=o.x+offset;bx<o.x+o.w;bx+=brickW){
+          ctx.beginPath();ctx.moveTo(bx,o.y);ctx.lineTo(bx,o.y+o.h);ctx.stroke();
+        }
+      }
     } else {
       ctx.fillStyle=o.color; ctx.strokeStyle=sel?'#e94560':'rgba(0,0,0,0.35)';
       ctx.lineWidth=is*(sel?2:1);
@@ -877,6 +967,23 @@ function ftLabel(a,b,color,is){
   ctx.strokeText(ft.toFixed(1)+"'",mx+nx,my+ny);
   ctx.fillStyle=color;
   ctx.fillText(ft.toFixed(1)+"'",mx+nx,my+ny);
+  // Footage on wall/concrete objects
+  let onFt=0, surfaceType='';
+  for(const o of S.objs){
+    if(o.type==='wall'||o.type==='concrete'){
+      const clip=segRectClip(a.x,a.y,b.x,b.y,o.x,o.y,o.w,o.h);
+      if(clip>0.05){onFt+=clip; surfaceType=o.type;}
+    }
+  }
+  if(onFt>0.05){
+    const tag=surfaceType==='wall'?'wall':'concrete';
+    const lbl=onFt.toFixed(1)+"' on "+tag;
+    ctx.font=`${is*8}px sans-serif`;
+    ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=is*2.5;
+    ctx.strokeText(lbl,mx+nx,my+ny+is*12);
+    ctx.fillStyle='#e94560';
+    ctx.fillText(lbl,mx+nx,my+ny+is*12);
+  }
 }
 
 function drawGate(f,g,gi,is){
@@ -1127,18 +1234,36 @@ function fenceStats(f){
   return groupStats([f]);
 }
 
+function surfaceFootage(fences){
+  let wall=0,concrete=0;
+  for(const f of fences){
+    for(let i=0;i<f.pts.length-1;i++){
+      const a=f.pts[i],b=f.pts[i+1];
+      for(const o of S.objs){
+        const clip=segRectClip(a.x,a.y,b.x,b.y,o.x,o.y,o.w,o.h);
+        if(o.type==='wall')wall+=clip;
+        else if(o.type==='concrete')concrete+=clip;
+      }
+    }
+  }
+  return{wall,concrete};
+}
+
 function calcMaterials(){
   const body=document.getElementById('mat-body');
   if(!body)return;
   let html='';
   let totFt=0,totEp=0,totCp=0,totGp=0,totG4=0,totG5=0,totG8=0,totG10=0,totGc=0;
+  let totWall=0,totConcrete=0;
   const groups=colorGroups();
 
   for(const color of groups){
     const grpFences=S.fences.filter(f=>f.color===color);
     const s=groupStats(grpFences);
+    const sf=surfaceFootage(grpFences);
     totFt+=s.ft; totEp+=s.ep; totCp+=s.cp;
     totGp+=s.gp; totG4+=s.g4; totG5+=s.g5; totG8+=s.g8; totG10+=s.g10; totGc+=s.gc;
+    totWall+=sf.wall; totConcrete+=sf.concrete;
 
     // Sub-labels: individual fence line names under this color
     const subNames=grpFences.map(f=>`<span style="font-size:10px;color:#aaa;">${f.name}</span>`).join(' · ');
@@ -1152,6 +1277,8 @@ function calcMaterials(){
       +(s.t3?mrow('3-Way Posts',s.t3):'')
       +(s.t4?mrow('4-Way Posts',s.t4):'')
       +(s.gp?mrow('Gate Posts',s.gp):'');
+    const surfaceRows=(sf.wall>0.05?`<div class="mr" style="color:#e94560;"><span>On Wall</span><span>${sf.wall.toFixed(1)} ft</span></div>`:'')
+      +(sf.concrete>0.05?`<div class="mr" style="color:#e94560;"><span>On Concrete</span><span>${sf.concrete.toFixed(1)} ft</span></div>`:'');
 
     html+=`
     <div style="border:1px solid ${color};border-radius:6px;margin-bottom:8px;overflow:hidden;">
@@ -1163,7 +1290,7 @@ function calcMaterials(){
         </div>
         <div style="margin-top:2px;padding-left:17px;">${subNames}</div>
       </div>
-      <div style="padding:4px 8px;">${postRows}${gateRows}</div>
+      <div style="padding:4px 8px;">${postRows}${gateRows}${surfaceRows}</div>
     </div>`;
   }
 
@@ -1179,6 +1306,8 @@ function calcMaterials(){
       ${totG8?mrow('8ft Double',totG8):''}
       ${totG10?mrow('10ft Double',totG10):''}
       ${totGc?mrow('Custom Gates',totGc):''}
+      ${totWall>0.05?`<div class="mr" style="color:#e94560;"><span>On Wall</span><span>${totWall.toFixed(1)} ft</span></div>`:''}
+      ${totConcrete>0.05?`<div class="mr" style="color:#e94560;"><span>On Concrete</span><span>${totConcrete.toFixed(1)} ft</span></div>`:''}
       <div class="mr" style="font-weight:700;border-top:1px solid #1a4a7a;margin-top:4px;padding-top:4px;">
         <span>TOTAL</span><span class="mc">${totFt.toFixed(1)} ft</span>
       </div>
@@ -1279,11 +1408,39 @@ function swapHinge(){
 }
 function editLabel(h){
   if(h.type==='object'){
-    const o=S.objs.find(x=>x.id===h.id);if(!o)return;
-    const l=prompt('Label:',o.lbl);if(l!==null){saveHist();o.lbl=l;render();}
+    openSizeEditor(h.id);
   } else if(h.type==='note'){
     openNoteEditor(h.id);
   }
+}
+
+let editingObjId=null;
+function openSizeEditor(id){
+  const o=S.objs.find(x=>x.id===id);if(!o)return;
+  editingObjId=id;
+  document.getElementById('size-lbl').value=o.lbl;
+  document.getElementById('size-w').value=o.w.toFixed(1);
+  document.getElementById('size-h').value=o.h.toFixed(1);
+  document.getElementById('size-dialog').style.display='block';
+  setTimeout(()=>document.getElementById('size-w').focus(),50);
+}
+function commitSizeEditor(){
+  const o=S.objs.find(x=>x.id===editingObjId);
+  if(o){
+    saveHist();
+    const lbl=document.getElementById('size-lbl').value.trim();
+    const w=parseFloat(document.getElementById('size-w').value);
+    const h=parseFloat(document.getElementById('size-h').value);
+    if(lbl)o.lbl=lbl;
+    if(w>=0.5)o.w=w;
+    if(h>=0.5)o.h=h;
+    calcMaterials();render();
+  }
+  cancelSizeEditor();
+}
+function cancelSizeEditor(){
+  editingObjId=null;
+  document.getElementById('size-dialog').style.display='none';
 }
 
 function openNoteEditor(id){
