@@ -16,7 +16,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tb.green{background:#1a6b3a;border-color:#27ae60;}
 .tb.green:hover{background:#27ae60;}
 #main{display:flex;flex:1;overflow:hidden;}
-#sidebar{width:220px;background:#16213e;border-right:1px solid #0f3460;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+#sidebar{width:220px;background:#16213e;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;position:relative;}
+#sb-resizer{position:absolute;top:0;right:0;width:5px;height:100%;cursor:col-resize;z-index:10;background:transparent;}
+#sb-resizer:hover,#sb-resizer.dragging{background:#e94560;}
 .ph{padding:7px 10px;background:#0f3460;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;display:flex;justify-content:space-between;}
 .pc{padding:8px;}
 .og{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;}
@@ -102,6 +104,7 @@ canvas{display:block;cursor:crosshair;}
 <div id="main">
   <!-- LEFT SIDEBAR -->
   <div id="sidebar">
+    <div id="sb-resizer"></div>
     <div>
       <div class="ph" onclick="tog('p-obj')">Objects <span id="arr-obj">▼</span></div>
       <div class="pc" id="p-obj">
@@ -145,19 +148,16 @@ canvas{display:block;cursor:crosshair;}
           <option value="5' Spear Top Aluminum Ornamental">5' Spear Top Aluminum Ornamental</option>
           <option value="6' Spear Top Aluminum Ornamental">6' Spear Top Aluminum Ornamental</option>
         </select>
-        <label>Color</label>
-        <div class="cr" id="fcolors">
-          <div class="cd active" style="background:#e74c3c" data-c="#e74c3c" onclick="pickColor('#e74c3c')"></div>
-          <div class="cd" style="background:#3498db" data-c="#3498db" onclick="pickColor('#3498db')"></div>
-          <div class="cd" style="background:#2ecc71" data-c="#2ecc71" onclick="pickColor('#2ecc71')"></div>
-          <div class="cd" style="background:#f39c12" data-c="#f39c12" onclick="pickColor('#f39c12')"></div>
-          <div class="cd" style="background:#9b59b6" data-c="#9b59b6" onclick="pickColor('#9b59b6')"></div>
-          <div class="cd" style="background:#1abc9c" data-c="#1abc9c" onclick="pickColor('#1abc9c')"></div>
-          <div class="cd" style="background:#e67e22" data-c="#e67e22" onclick="pickColor('#e67e22')"></div>
-          <div class="cd" style="background:#34495e" data-c="#34495e" onclick="pickColor('#34495e')"></div>
-        </div>
         <label>Notes</label>
         <textarea id="fnotes" placeholder="Notes about this fence run..." oninput="updateSelFence()"></textarea>
+        <label style="margin-top:4px;">Finish Side</label>
+        <button class="tb" id="btn-flip-good" style="width:100%;margin-bottom:4px;" onclick="flipGoodSide()">↔ Flip Finish Side</button>
+        <label style="margin-top:4px;">Elevation Change Posts</label>
+        <div style="display:flex;gap:4px;align-items:center;margin-bottom:5px;">
+          <button class="tb" style="padding:4px 10px;font-size:14px;" onclick="changeElevPosts(-1)">−</button>
+          <span id="elev-count" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#eee;">0</span>
+          <button class="tb" style="padding:4px 10px;font-size:14px;" onclick="changeElevPosts(1)">+</button>
+        </div>
         <div class="tip">Double-click to finish fence. Click existing point to connect.</div>
       </div>
     </div>
@@ -273,7 +273,7 @@ const S = {
   fences:[],   // {id,name,color,notes,pts:[{x,y}],gates:[{si,t,sz,gt,flip}]}
   objs:[],     // {id,type,x,y,w,h,lbl,color}
   notes:[],    // {id,x,y,txt}
-  selId:null, selType:null, selGateIdx:null,
+  selId:null, selType:null, selGateIdx:null, selElevIdx:null,
   nid:1
 };
 let hist=[], hIdx=-1;
@@ -282,7 +282,30 @@ let hist=[], hIdx=-1;
 let vx=0,vy=0,zoom=1,pxFt=10;
 
 // ─── TOOL STATE ───────────────────────────────────────────────
-let tool='select', objType='house', fColor='#e74c3c', gSz=4, gSzC='custom';
+const FENCE_COLORS={
+  "4' Black Chain Link":'#2e7d7d',
+  "4' Galvanized Chain Link":'#a0a0a0',
+  "5' Black Chain Link":'#3a7a3a',
+  "5' Galvanized Chain Link":'#7fb3d3',
+  "6' Black Chain Link":'#8b3333',
+  "6' Galvanized Chain Link":'#5d8a8a',
+  "6' Wood Privacy Fence":'#8B4513',
+  "6' Shadow Box Privacy Fence":'#A0522D',
+  "6' Cap Board Wood Privacy Fence (Flush Top)":'#D2691E',
+  "6' Cap Board Wood Privacy Fence (With Dados)":'#CD853F',
+  "8' Standard Wood Privacy":'#6B3A2A',
+  "3 Board Wood Fence":'#27ae60',
+  "4 Board Wood Fence":'#2ecc71',
+  "Crossbuck Wood Fence":'#16a085',
+  "Field Fence w/ T Posts":'#f39c12',
+  "4' Flat Top Aluminum Ornamental":'#2980b9',
+  "5' Flat Top Aluminum Ornamental":'#3498db',
+  "6' Flat Top Aluminum Ornamental":'#1a5276',
+  "4' Spear Top Aluminum Ornamental":'#8e44ad',
+  "5' Spear Top Aluminum Ornamental":'#9b59b6',
+  "6' Spear Top Aluminum Ornamental":'#6c3483',
+};
+let tool='select', objType='house', fColor=FENCE_COLORS["4' Black Chain Link"], gSz=4, gSzC='custom';
 let gSzOpts=[4,5]; // changes based on gate type
 
 // Background image
@@ -350,6 +373,32 @@ function d2seg(p,a,b){
   const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l2));
   return dst(p,{x:a.x+t*dx,y:a.y+t*dy});
 }
+
+// ─── SIDEBAR RESIZE ───────────────────────────────────────────
+(function(){
+  const sb=document.getElementById('sidebar');
+  const rs=document.getElementById('sb-resizer');
+  let dragging=false, startX=0, startW=0;
+  rs.addEventListener('mousedown',e=>{
+    dragging=true; startX=e.clientX; startW=sb.offsetWidth;
+    rs.classList.add('dragging');
+    document.body.style.cursor='col-resize';
+    document.body.style.userSelect='none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const w=Math.max(150,Math.min(420,startW+(e.clientX-startX)));
+    sb.style.width=w+'px';
+  });
+  document.addEventListener('mouseup',()=>{
+    if(!dragging)return;
+    dragging=false;
+    rs.classList.remove('dragging');
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+  });
+})();
 
 // ─── EVENTS ───────────────────────────────────────────────────
 function setupEvents(){
@@ -494,6 +543,9 @@ function selDown(cp,w){
     } else if(h.type==='gate'){
       S.selId=h.id; S.selType='gate'; S.selGateIdx=h.gi;
       dragT={type:'gate',fenceId:h.id,gateIdx:h.gi};
+    } else if(h.type==='elevPost'){
+      S.selId=h.id; S.selType='elevPost'; S.selElevIdx=h.ei;
+      dragT={type:'elevPost',fenceId:h.id,elevIdx:h.ei};
     } else if(h.type==='note'){
       const n=S.notes.find(x=>x.id===h.id);
       dragT={type:'note',id:h.id,ox:w.x-n.x,oy:w.y-n.y};
@@ -516,7 +568,7 @@ function fenceDown(w){
       }
     }
     // Close loop on click near first point (need at least 3 pts to close)
-    if(dPts.length>2&&dst(sn,dPts[0])<snapDist){finishFence();return;}
+    if(dPts.length>2&&dst(sn,dPts[0])<snapDist){dPts.push({...dPts[0]});finishFence();return;}
     dPts.push(sn);
   }
 }
@@ -531,10 +583,12 @@ function finishFence(){
   S.fences.push({
     id,
     name,
-    color:fColor,
+    color:FENCE_COLORS[name]||fColor,
     notes:document.getElementById('fnotes').value,
     pts:[...dPts],
-    gates:[]
+    gates:[],
+    goodSide:false,
+    elevPosts:[]
   });
   S.selId=id; S.selType='fence';
   drawing=false; dPts=[]; dId=null;
@@ -614,6 +668,21 @@ function handleDrag(w){
       if(d<bd){bd=d;best={si:i,t};}
     }
     if(best){const g=f.gates[dragT.gateIdx];g.si=best.si;g.t=best.t;calcMaterials();}
+  } else if(dragT.type==='elevPost'){
+    const f=S.fences.find(x=>x.id===dragT.fenceId);
+    if(!f||!Array.isArray(f.elevPosts))return;
+    let best=null,bd=Infinity;
+    for(let i=0;i<f.pts.length-1;i++){
+      const a=f.pts[i],b=f.pts[i+1];
+      const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy;
+      if(!l2)continue;
+      let t=((w.x-a.x)*dx+(w.y-a.y)*dy)/l2;
+      t=Math.max(0.05,Math.min(0.95,t));
+      const np={x:a.x+t*dx,y:a.y+t*dy};
+      const d=dst(w,np);
+      if(d<bd){bd=d;best={si:i,t};}
+    }
+    if(best){const ep=f.elevPosts[dragT.elevIdx];ep.si=best.si;ep.t=best.t;}
   } else if(dragT.type==='bg'&&bgImg){
     bgImg.x=w.x-dragT.ox; bgImg.y=w.y-dragT.oy;
   }
@@ -646,6 +715,17 @@ function hitTest(w){
   for(const f of S.fences){
     for(let i=0;i<f.pts.length;i++){
       if(dst(w,f.pts[i])<thr)return{type:'fence-pt',id:f.id,pi:i};
+    }
+  }
+  // Elevation posts
+  for(const f of S.fences){
+    const eps=Array.isArray(f.elevPosts)?f.elevPosts:[];
+    for(let ei=0;ei<eps.length;ei++){
+      const ep=eps[ei];
+      if(ep.si>=f.pts.length-1)continue;
+      const a=f.pts[ep.si],b=f.pts[ep.si+1];
+      const cx=a.x+ep.t*(b.x-a.x),cy=a.y+ep.t*(b.y-a.y);
+      if(dst(w,{x:cx,y:cy})<1.2)return{type:'elevPost',id:f.id,ei};
     }
   }
   // Gates (check before fence lines so they're easier to click)
@@ -709,7 +789,7 @@ function updateSidebar(){
     if(f){
       document.getElementById('fn').value=f.name;
       document.getElementById('fnotes').value=f.notes||'';
-      document.querySelectorAll('.cd').forEach(d=>d.classList.toggle('active',d.dataset.c===f.color));
+      document.getElementById('elev-count').textContent=Array.isArray(f.elevPosts)?f.elevPosts.length:0;
       fColor=f.color;
     }
   }
@@ -718,12 +798,14 @@ function updateSidebar(){
   renderFList();
 }
 function updateSelFence(){
+  const newName=document.getElementById('fn').value;
+  const nameColor=FENCE_COLORS[newName];
+  if(nameColor)fColor=nameColor;
   if(S.selType!=='fence')return;
   const f=S.fences.find(x=>x.id===S.selId);
   if(!f)return;
-  const newName=document.getElementById('fn').value;
-  // Sync name to ALL fences sharing this color
-  S.fences.filter(x=>x.color===f.color).forEach(x=>x.name=newName);
+  const newColor=nameColor||f.color;
+  S.fences.filter(x=>x.id===f.id).forEach(x=>{x.name=newName;x.color=newColor;});
   f.notes=document.getElementById('fnotes').value;
   renderFList();calcMaterials();render();
 }
@@ -919,15 +1001,32 @@ function drawFences(){
     for(let i=1;i<f.pts.length;i++)ctx.lineTo(f.pts[i].x,f.pts[i].y);
     ctx.stroke();
     ctx.shadowBlur=0;
-    // Hatching
-    ctx.strokeStyle=f.color+'70'; ctx.lineWidth=is*0.8;
-    for(let i=0;i<f.pts.length-1;i++)hatch(f.pts[i],f.pts[i+1],is);
+    // Good-side arrows
+    for(let i=0;i<f.pts.length-1;i++)drawGoodSideArrow(f.pts[i],f.pts[i+1],f.color,f.goodSide||false,is);
     // Gates
-    for(let gi=0;gi<f.gates.length;gi++)drawGate(f,f.gates[gi],gi,is);
+    for(let gi=0;gi<f.gates.length;gi++)drawGate(f,f.gates[gi],gi,is,sel);
+    // Line post dots
+    for(let i=0;i<f.pts.length-1;i++)drawLinePosts(f.pts[i],f.pts[i+1],f.gates.filter(g=>g.si===i),f.name,f.color,is,(Array.isArray(f.elevPosts)?f.elevPosts:[]).filter(ep=>ep.si===i));
+    // Elevation posts
+    const eps=Array.isArray(f.elevPosts)?f.elevPosts:[];
+    // Pre-sort elev posts per segment so neighbors can be looked up
+    const epsBySeg={};
+    for(let ei=0;ei<eps.length;ei++){const si=eps[ei].si;(epsBySeg[si]=epsBySeg[si]||[]).push({ei,ep:eps[ei]});}
+    for(const si in epsBySeg)epsBySeg[si].sort((a,b)=>a.ep.t-b.ep.t);
+    for(let ei=0;ei<eps.length;ei++){
+      const ep=eps[ei];
+      const segEps=epsBySeg[ep.si]||[];
+      const myIdx=segEps.findIndex(e=>e.ei===ei);
+      const sa=f.pts[ep.si],sb=f.pts[ep.si+1];
+      const sdx=sb.x-sa.x,sdy=sb.y-sa.y;
+      const leftPt=myIdx>0?{x:sa.x+segEps[myIdx-1].ep.t*sdx,y:sa.y+segEps[myIdx-1].ep.t*sdy}:sa;
+      const rightPt=myIdx<segEps.length-1?{x:sa.x+segEps[myIdx+1].ep.t*sdx,y:sa.y+segEps[myIdx+1].ep.t*sdy}:sb;
+      drawElevPost(f,ep,S.selType==='elevPost'&&S.selId===f.id&&S.selElevIdx===ei,is,sel,leftPt,rightPt);
+    }
     // Posts at vertices
     for(const p of f.pts)drawPost(p,f.color,is);
     // Footage labels
-    for(let i=0;i<f.pts.length-1;i++)ftLabel(f.pts[i],f.pts[i+1],f.color,is);
+    for(let i=0;i<f.pts.length-1;i++)ftLabel(f.pts[i],f.pts[i+1],f.color,is,sel);
     // Selection handles
     if(sel){
       ctx.fillStyle='white'; ctx.strokeStyle=f.color; ctx.lineWidth=is*1.5;
@@ -935,6 +1034,54 @@ function drawFences(){
     }
     ctx.restore();
   }
+}
+
+function drawGoodSideArrow(a,b,color,goodSide,is){
+  const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+  if(len<2)return;
+  const ux=dx/len,uy=dy/len;
+  const nx=goodSide?uy:-uy, ny=goodSide?-ux:ux;
+  const w=1; // hue strip width in ft
+  ctx.save();
+  const grad=ctx.createLinearGradient(a.x,a.y,a.x+nx*w,a.y+ny*w);
+  grad.addColorStop(0,color+'70');
+  grad.addColorStop(1,color+'00');
+  ctx.beginPath();
+  ctx.moveTo(a.x,a.y);
+  ctx.lineTo(b.x,b.y);
+  ctx.lineTo(b.x+nx*w,b.y+ny*w);
+  ctx.lineTo(a.x+nx*w,a.y+ny*w);
+  ctx.closePath();
+  ctx.fillStyle=grad;
+  ctx.fill();
+  ctx.restore();
+}
+
+function changeElevPosts(delta){
+  if(S.selType!=='fence')return;
+  const f=S.fences.find(x=>x.id===S.selId);
+  if(!f)return;
+  if(!Array.isArray(f.elevPosts))f.elevPosts=[];
+  saveHist();
+  if(delta>0){
+    // Place at midpoint of longest available segment
+    let best={si:0,len:0};
+    for(let i=0;i<f.pts.length-1;i++){const l=dst(f.pts[i],f.pts[i+1]);if(l>best.len){best={si:i,len:l};}}
+    f.elevPosts.push({si:best.si,t:0.5});
+  } else {
+    if(f.elevPosts.length>0)f.elevPosts.pop();
+  }
+  document.getElementById('elev-count').textContent=f.elevPosts.length;
+  calcMaterials();render();
+}
+
+function flipGoodSide(){
+  if(S.selType!=='fence')return;
+  const f=S.fences.find(x=>x.id===S.selId);
+  if(!f)return;
+  saveHist();
+  f.goodSide=!f.goodSide;
+  render();
 }
 
 function hatch(a,b,is){
@@ -950,18 +1097,84 @@ function hatch(a,b,is){
   ctx.stroke();
 }
 
+function drawElevPost(f,ep,sel,is,fenceSel,leftPt,rightPt){
+  if(ep.si>=f.pts.length-1)return;
+  const a=f.pts[ep.si],b=f.pts[ep.si+1];
+  const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+  if(len<0.1)return;
+  const ux=dx/len,uy=dy/len;
+  const x=a.x+ep.t*dx,y=a.y+ep.t*dy;
+  const lp=leftPt||a, rp=rightPt||b;
+  const sz=is*6;
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(Math.PI/4);
+  ctx.fillStyle=sel?'#ff6b00':'#ff9500';
+  ctx.strokeStyle='#fff';
+  ctx.lineWidth=is*0.8;
+  ctx.fillRect(-sz/2,-sz/2,sz,sz);
+  ctx.strokeRect(-sz/2,-sz/2,sz,sz);
+  ctx.restore();
+  // Side footage labels — measure to nearest neighbor (elev post or corner)
+  const perpX=-uy,perpY=ux;
+  const sideOffX=perpX*is*9,sideOffY=perpY*is*9;
+  const distLeft=dst({x,y},lp);
+  const distRight=dst({x,y},rp);
+  const fs=fenceSel?is*12:is*8;
+  ctx.font=`bold ${fs}px sans-serif`;
+  ctx.textAlign='center';
+  ctx.fillStyle='#ff6b00';
+  if(distLeft>0.2){
+    const mlx=(lp.x+x)/2+sideOffX,mly=(lp.y+y)/2+sideOffY;
+    ctx.strokeStyle='rgba(255,255,255,0.85)';ctx.lineWidth=is*2;
+    ctx.strokeText(distLeft.toFixed(1)+"'",mlx,mly);
+    ctx.fillText(distLeft.toFixed(1)+"'",mlx,mly);
+  }
+  if(distRight>0.2){
+    const mrx=(x+rp.x)/2+sideOffX,mry=(y+rp.y)/2+sideOffY;
+    ctx.strokeStyle='rgba(255,255,255,0.85)';ctx.lineWidth=is*2;
+    ctx.strokeText(distRight.toFixed(1)+"'",mrx,mry);
+    ctx.fillText(distRight.toFixed(1)+"'",mrx,mry);
+  }
+}
+
+function drawLinePosts(a,b,gatesOnSeg,name,color,is,elevOnSeg=[]){
+  const dx=b.x-a.x,dy=b.y-a.y,segLen=Math.sqrt(dx*dx+dy*dy);
+  if(segLen<0.5)return;
+  const spacing=linePostSpacing(name);
+  const breaks=[0,...elevOnSeg.map(ep=>ep.t).sort((a,b)=>a-b),1];
+  ctx.fillStyle='#fff';
+  ctx.strokeStyle=color;
+  ctx.lineWidth=is*0.8;
+  for(let k=0;k<breaks.length-1;k++){
+    const t0=breaks[k],t1=breaks[k+1];
+    const subLen=(t1-t0)*segLen;
+    const count=Math.max(0,Math.ceil(subLen/spacing)-1);
+    for(let i=1;i<=count;i++){
+      const tRel=(spacing*i)/subLen;
+      if(tRel>=1)break;
+      const t=t0+tRel*(t1-t0);
+      const px=a.x+t*dx,py=a.y+t*dy;
+      const inGate=gatesOnSeg.some(g=>{const hw=g.sz/2/segLen;return t>=g.t-hw&&t<=g.t+hw;});
+      if(inGate)continue;
+      ctx.beginPath();ctx.arc(px,py,is*2,0,Math.PI*2);ctx.fill();ctx.stroke();
+    }
+  }
+}
+
 function drawPost(p,color,is){
   ctx.fillStyle='#222'; ctx.strokeStyle=color; ctx.lineWidth=is*0.8;
   ctx.beginPath();ctx.arc(p.x,p.y,is*3,0,Math.PI*2);ctx.fill();ctx.stroke();
 }
 
-function ftLabel(a,b,color,is){
+function ftLabel(a,b,color,is,sel){
   const ft=dst(a,b);
   if(ft<0.5)return;
   const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
   const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
   const nx=-dy/len*is*9,ny=dx/len*is*9;
-  ctx.font=`bold ${is*9}px sans-serif`;
+  const fs=sel?is*13:is*9;
+  ctx.font=`bold ${fs}px sans-serif`;
   ctx.textAlign='center';
   ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=is*3;
   ctx.strokeText(ft.toFixed(1)+"'",mx+nx,my+ny);
@@ -978,15 +1191,16 @@ function ftLabel(a,b,color,is){
   if(onFt>0.05){
     const tag=surfaceType==='wall'?'wall':'concrete';
     const lbl=onFt.toFixed(1)+"' on "+tag;
-    ctx.font=`${is*8}px sans-serif`;
+    const sfs=sel?is*12:is*8;
+    ctx.font=`${sfs}px sans-serif`;
     ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=is*2.5;
-    ctx.strokeText(lbl,mx+nx,my+ny+is*12);
+    ctx.strokeText(lbl,mx+nx,my+ny+fs*1.4);
     ctx.fillStyle='#e94560';
-    ctx.fillText(lbl,mx+nx,my+ny+is*12);
+    ctx.fillText(lbl,mx+nx,my+ny+fs*1.4);
   }
 }
 
-function drawGate(f,g,gi,is){
+function drawGate(f,g,gi,is,fenceSel){
   if(g.si>=f.pts.length-1)return;
   const a=f.pts[g.si],b=f.pts[g.si+1];
   const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
@@ -1033,7 +1247,8 @@ function drawGate(f,g,gi,is){
   // Gate width label (above center)
   const ny2=-uy*is*9, nx2=-(-uy)*is*9; // perpendicular offset upward
   const perpX=-uy, perpY=ux;
-  ctx.fillStyle='#5D3A0E'; ctx.font=`bold ${is*8}px sans-serif`; ctx.textAlign='center';
+  const gfs=fenceSel?is*12:is*8;
+  ctx.fillStyle='#5D3A0E'; ctx.font=`bold ${gfs}px sans-serif`; ctx.textAlign='center';
   ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=is*2.5;
   const lx=cx+perpX*is*10, ly=cy+perpY*is*10;
   ctx.strokeText(g.sz+"' gate",lx,ly);
@@ -1044,7 +1259,8 @@ function drawGate(f,g,gi,is){
   const distRight=dst({x:gx2,y:gy2},b);  // gate post 2 → segment end
 
   const sideOffX=perpX*is*9, sideOffY=perpY*is*9;
-  ctx.font=`${is*7.5}px sans-serif`; ctx.fillStyle='#333';
+  const sfs=fenceSel?is*11.5:is*7.5;
+  ctx.font=`${sfs}px sans-serif`; ctx.fillStyle='#333';
 
   // Left side label — midpoint between a and gx1
   if(distLeft>0.2){
@@ -1185,19 +1401,36 @@ function mrow(label,val){
   return `<div class="mr"><span>${label}</span><span class="mc">${val}</span></div>`;
 }
 
+function linePostSpacing(name){
+  if(/chain link/i.test(name)) return 10;
+  if(/aluminum|ornamental/i.test(name)) return 6;
+  if(/field fence/i.test(name)) return 10;
+  return 7.5; // wood, board, crossbuck, etc.
+}
+
 // Returns stats for a GROUP of fence lines (same color = same fence)
 function groupStats(fences){
   // Build graph across all lines in this group to correctly count shared points
   const nkey=p=>`${Math.round(p.x*10)},${Math.round(p.y*10)}`;
   const graph=new Map();
-  let ft=0,gp=0,g4=0,g5=0,g8=0,g10=0,gc=0;
+  let ft=0,gp=0,g4=0,g5=0,g8=0,g10=0,gc=0,lp=0;
+  const spacing=linePostSpacing(fences[0]?.name||'');
   for(const f of fences){
     if(f.pts.length<2)continue;
     for(const p of f.pts){const k=nkey(p);if(!graph.has(k))graph.set(k,new Set());}
     for(let i=0;i<f.pts.length-1;i++){
       const k1=nkey(f.pts[i]),k2=nkey(f.pts[i+1]);
       graph.get(k1).add(k2); graph.get(k2).add(k1);
-      ft+=dst(f.pts[i],f.pts[i+1]);
+      const segLen=dst(f.pts[i],f.pts[i+1]);
+      ft+=segLen;
+      const elevOnSeg=(Array.isArray(f.elevPosts)?f.elevPosts:[]).filter(ep=>ep.si===i).map(ep=>ep.t).sort((a,b)=>a-b);
+      const breakPts=[0,...elevOnSeg,1];
+      for(let k=0;k<breakPts.length-1;k++){
+        const subLen=(breakPts[k+1]-breakPts[k])*segLen;
+        const gateDeduct=f.gates.filter(g=>g.si===i&&g.t>=breakPts[k]&&g.t<=breakPts[k+1]).reduce((s,g)=>s+g.sz,0);
+        const netSubLen=Math.max(0,subLen-gateDeduct);
+        lp+=Math.max(0,Math.ceil(netSubLen/spacing)-1);
+      }
     }
     for(const g of f.gates){
       gp+=2;
@@ -1210,7 +1443,7 @@ function groupStats(fences){
     const d=nb.size;
     if(d===1)ep++; else if(d===2)cp++; else if(d===3)t3++; else if(d>=4)t4++;
   }
-  return{ep,cp,t3,t4,gp,g4,g5,g8,g10,gc,ft};
+  return{ep,cp,t3,t4,gp,g4,g5,g8,g10,gc,ft,lp,spacing};
 }
 
 // Returns ordered unique colors in the order they were first drawn
@@ -1253,7 +1486,7 @@ function calcMaterials(){
   const body=document.getElementById('mat-body');
   if(!body)return;
   let html='';
-  let totFt=0,totEp=0,totCp=0,totGp=0,totG4=0,totG5=0,totG8=0,totG10=0,totGc=0;
+  let totFt=0,totEp=0,totCp=0,totGp=0,totG4=0,totG5=0,totG8=0,totG10=0,totGc=0,totLp=0;
   let totWall=0,totConcrete=0;
   const groups=colorGroups();
 
@@ -1261,7 +1494,7 @@ function calcMaterials(){
     const grpFences=S.fences.filter(f=>f.color===color);
     const s=groupStats(grpFences);
     const sf=surfaceFootage(grpFences);
-    totFt+=s.ft; totEp+=s.ep; totCp+=s.cp;
+    totFt+=s.ft; totEp+=s.ep; totCp+=s.cp; totLp+=s.lp;
     totGp+=s.gp; totG4+=s.g4; totG5+=s.g5; totG8+=s.g8; totG10+=s.g10; totGc+=s.gc;
     totWall+=sf.wall; totConcrete+=sf.concrete;
 
@@ -1272,10 +1505,13 @@ function calcMaterials(){
       +(s.g8?mrow('8ft Double',s.g8):'')
       +(s.g10?mrow('10ft Double',s.g10):'')
       +(s.gc?mrow('Custom Gate',s.gc):'');
+    const grpElev=grpFences.reduce((sum,f)=>sum+(Array.isArray(f.elevPosts)?f.elevPosts.length:0),0);
     const postRows=mrow('End Posts',s.ep)
       +mrow('Corner Posts',s.cp)
       +(s.t3?mrow('3-Way Posts',s.t3):'')
       +(s.t4?mrow('4-Way Posts',s.t4):'')
+      +mrow(`Line Posts (${s.spacing}ft)`,s.lp)
+      +(grpElev?mrow('Elevation Posts',grpElev):'')
       +(s.gp?mrow('Gate Posts',s.gp):'');
     const surfaceRows=(sf.wall>0.05?`<div class="mr" style="color:#e94560;"><span>On Wall</span><span>${sf.wall.toFixed(1)} ft</span></div>`:'')
       +(sf.concrete>0.05?`<div class="mr" style="color:#e94560;"><span>On Concrete</span><span>${sf.concrete.toFixed(1)} ft</span></div>`:'');
@@ -1300,6 +1536,8 @@ function calcMaterials(){
       <div class="st">Grand Totals</div>
       ${mrow('End Posts',totEp)}
       ${mrow('Corner Posts',totCp)}
+      ${mrow('Line Posts',totLp)}
+      ${S.fences.reduce((s,f)=>s+(Array.isArray(f.elevPosts)?f.elevPosts.length:0),0)?mrow('Elevation Posts',S.fences.reduce((s,f)=>s+(Array.isArray(f.elevPosts)?f.elevPosts.length:0),0)):''}
       ${totGp?mrow('Gate Posts',totGp):''}
       ${totG4?mrow('4ft Single',totG4):''}
       ${totG5?mrow('5ft Single',totG5):''}
